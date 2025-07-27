@@ -1,0 +1,74 @@
+-- Buses Table
+CREATE TABLE IF NOT EXISTS buses (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    bus_number VARCHAR(20) NOT NULL,
+    capacity INT NOT NULL,
+    driver VARCHAR(100),
+    status ENUM('active', 'maintenance') DEFAULT 'active'
+);
+
+-- Drivers Table
+CREATE TABLE IF NOT EXISTS drivers (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    license_number VARCHAR(50) UNIQUE,
+    bus_id INT,
+    FOREIGN KEY (bus_id) REFERENCES buses(id) ON DELETE SET NULL
+);
+
+-- Routes Table
+CREATE TABLE IF NOT EXISTS routes (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    origin VARCHAR(100) NOT NULL,
+    destination VARCHAR(100) NOT NULL,
+    distance_km DECIMAL(6,2) NOT NULL
+);
+
+-- Bookings Table (Updated)
+CREATE TABLE IF NOT EXISTS bookings (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    passenger_name VARCHAR(100) NOT NULL,
+    bus_id INT NOT NULL,
+    route_id INT NOT NULL,
+    seat_number VARCHAR(10),
+    booking_date DATE NOT NULL,
+    amount DECIMAL(10,2) NOT NULL,
+    status ENUM('confirmed', 'pending', 'completed', 'cancelled') DEFAULT 'confirmed',
+    FOREIGN KEY (bus_id) REFERENCES buses(id),
+    FOREIGN KEY (route_id) REFERENCES routes(id)
+);
+
+-- Insert Buses
+INSERT INTO buses (bus_number, capacity, driver, status) VALUES
+('KL-15-AB-1234', 50, 'Rajeev Menon', 'active'),
+('KL-01-CD-5678', 45, 'Suresh Kumar', 'active'),
+('KL-07-EF-9012', 55, 'Anitha Nair', 'maintenance'),
+('KL-05-GH-3456', 40, 'Vijayan Pillai', 'active'),
+('KL-08-IJ-6789', 50, 'Latha Suresh', 'active');
+
+-- Insert Drivers
+INSERT INTO drivers (name, license_number, bus_id) VALUES
+('Rajeev Menon', 'DL04201500001', 1),
+('Suresh Kumar', 'DL05201800002', 2),
+('Anitha Nair', 'DL03202200003', 3),
+('Vijayan Pillai', 'DL06201900004', 4),
+('Latha Suresh', 'DL01202000005', 5),
+('Manoj Prabhakar', 'DL07202100006', NULL);
+
+-- Insert Routes (Kerala locations)
+INSERT INTO routes (origin, destination, distance_km) VALUES
+('Thiruvananthapuram', 'Kollam', 65.5),
+('Kochi', 'Thrissur', 86.0),
+('Kozhikode', 'Kannur', 93.2),
+('Alappuzha', 'Kottayam', 53.7),
+('Palakkad', 'Malappuram', 78.4),
+('Thiruvananthapuram', 'Kanyakumari', 87.0),
+('Thrissur', 'Palakkad', 80.2);
+
+-- Insert Bookings (Updated with status and amount)
+INSERT INTO bookings (passenger_name, bus_id, route_id, seat_number, booking_date, amount, status) VALUES
+('Aravind S', 1, 1, 'A12', '2023-10-15', 250.00, 'confirmed'),
+('Meera M', 2, 2, 'B07', '2023-10-16', 180.00, 'pending'),
+('Santhosh P', 3, 3, 'C21', '2023-10-17', 220.00, 'completed'),
+('Lakshmi V', 4, 4, 'D15', '2023-10-18', 150.00, 'cancelled'),
+('Vishnu R', 5, 5, 'E09', '2023-10-19', 280.00, 'confirmed');

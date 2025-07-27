@@ -1,53 +1,178 @@
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
-  <style>
-    table {
-      border-collapse: collapse;
-      width: 60%;
-      margin: 20px auto;
-    }
-    th, td {
-      padding: 10px;
-      border: 1px solid #999;
-      text-align: left;
-    }
-    th {
-      background-color: #f2f2f2;
-    }
-    h1 {
-      text-align: center;
-    }
-  </style>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KSRTC Dashboard</title>
+  <link rel="icon" href="assets/icon32.ico" type="image/x-icon">
+  <link href="style.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
-<body>
-  <table id="userTable">
-    <thead>
-      <tr>
-        <th>ID</th>
-        <th>Name</th>
-        <th>Email</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
 
-  <script>
-    fetch('http://localhost:3000/users')
-      .then(response => response.json())
-      .then(data => {
-        const tbody = document.querySelector('#userTable tbody');
-        data.forEach(user => {
-          const row = document.createElement('tr');
-          row.innerHTML = `
-            <td>${user.id}</td>
-            <td>${user.name}</td>
-            <td>${user.email}</td>
-          `;
-          tbody.appendChild(row);
-        });
-      })
-      .catch(err => console.error('Error fetching users:', err));
-  </script>
+<body>
+  <div class="dashboard">
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <h2><img src="assets/logo.png" alt="KSRTC Logo" class="sidebar-logo">KSRTC Bus Management</h2>
+      <ul>
+        <li class="active" data-view="dashboard"><i class="fas fa-tachometer-alt"></i> Dashboard</li>
+        <li data-view="buses"><i class="fas fa-bus"></i> Buses</li>
+        <li data-view="routes"><i class="fas fa-route"></i> Routes</li>
+        <li data-view="bookings"><i class="fas fa-ticket"></i> Bookings</li>
+      </ul>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+
+
+      <!-- Dashboard View -->
+      <div id="dashboard-view" class="view active-view">
+        <h1>Dashboard</h1>
+        <!-- Profile Header -->
+        <div class="profile-header">
+          <div class="profile-info">
+            <div class="profile-icon">
+              <i class="fas fa-user-circle"></i>
+            </div>
+            <div class="profile-details">
+              <span class="profile-name">Admin User</span>
+              <span class="profile-role">Administrator</span>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Summary Cards -->
+        <div class="summary-cards">
+          <div class="card">
+            <h3>Total Buses</h3>
+            <p id="totalBuses">0</p>
+          </div>
+          <div class="card">
+            <h3>Total Routes</h3>
+            <p id="totalRoutes">0</p>
+          </div>
+          <div class="card">
+            <h3>Total Bookings</h3>
+            <p id="totalBookings">0</p>
+          </div>
+        </div>
+
+        <!-- Tables Section -->
+        <div class="tables-section">
+          <div class="table-container">
+            <div class="table-header">
+              <h2>Buses</h2>
+            </div>
+            <table id="busTable">
+              <thead>
+                <tr>
+                  <th>Bus Number</th>
+                  <th>Capacity</th>
+                  <th>Driver</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+
+          <div class="table-container">
+            <h2>Drivers</h2>
+            <table id="driverTable">
+              <thead>
+                <tr>
+                  <th>Driver</th>
+                  <th>Assigned Bus</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Buses View -->
+      <div id="buses-view" class="view">
+        <div class="view-header">
+          <h1>Buses Management</h1>
+          <button class="add-button"><i class="fas fa-plus"></i> Add New Bus</button>
+        </div>
+
+        <div class="table-container">
+          <table id="buses-management-table">
+            <thead>
+              <tr>
+                <th>Bus Number</th>
+                <th>Capacity</th>
+                <th>Driver</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Data will be populated from database -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Routes View -->
+      <div id="routes-view" class="view">
+        <div class="view-header">
+          <h1>Routes Management</h1>
+          <button class="add-button"><i class="fas fa-plus"></i> Add New Route</button>
+        </div>
+
+        <div class="table-container">
+          <table id="routes-management-table">
+            <thead>
+              <tr>
+                <th>Route ID</th>
+                <th>Origin</th>
+                <th>Destination</th>
+                <th>Distance (km)</th>
+                <th>Duration</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Data will be populated from database -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Bookings View -->
+      <div id="bookings-view" class="view">
+        <div class="view-header">
+          <h1>Bookings Management</h1>
+          <button class="add-button"><i class="fas fa-plus"></i> Create Booking</button>
+        </div>
+
+        <div class="table-container">
+          <table id="bookings-management-table">
+            <thead>
+              <tr>
+                <th>Booking ID</th>
+                <th>Passenger</th>
+                <th>Bus</th>
+                <th>Route</th>
+                <th>Date</th>
+                <th>Amount</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Data will be populated from database -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
 </body>
+
 </html>
