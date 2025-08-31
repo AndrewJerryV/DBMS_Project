@@ -17,49 +17,73 @@ db.connect(err => {
   console.log('Connected to MySQL');
 });
 
+// Get full bus info
 app.get('/buses/full', (req, res) => {
-  db.query('SELECT bus_number, capacity, driver, status FROM buses', (err, results) => {
-    if (err) throw err;
-    res.json(results);
-  });
-});
-
-app.get('/routes', (req, res) => {
   db.query(`
     SELECT 
-      id AS route_id,
-      origin,
-      destination,
-      distance_km,
-      ROUND(distance_km / 50) AS hours,
-      ROUND((distance_km % 50) / 50 * 60) AS minutes
-    FROM routes
+      bu.bus_number, 
+      bu.capacity, 
+      d.name AS driver,
+      bu.status,
+      bs.name AS bus_stop,
+      bu.bus_type
+    FROM buses bu
+    LEFT JOIN drivers d ON bu.driver_id = d.id
+    LEFT JOIN bus_stops bs ON bu.bus_stop_id = bs.id
   `, (err, results) => {
     if (err) throw err;
     res.json(results);
   });
 });
 
+// Get all routes with duration in hours/minutes and fare
+app.get('/routes', (req, res) => {
+  db.query(`
+    SELECT 
+      r.id AS route_id,
+      o.name AS origin,
+      d.name AS destination,
+      r.distance_km,
+      r.fare,
+      ROUND(r.distance_km / 50) AS hours,
+      ROUND((r.distance_km % 50) / 50 * 60) AS minutes
+    FROM routes r
+    JOIN bus_stops o ON r.origin_bus_stop_id = o.id
+    JOIN bus_stops d ON r.destination_bus_stop_id = d.id
+  `, (err, results) => {
+    if (err) throw err;
+    res.json(results);
+  });
+});
+
+// Get all bookings with passenger info
 app.get('/bookings', (req, res) => {
   db.query(`
     SELECT 
       b.id AS booking_id,
-      b.passenger_name,
+      p.name AS passenger_name,
       bu.bus_number,
-      CONCAT(r.origin, ' - ', r.destination) AS route,
-      b.booking_date,
-      p.amount,
-      b.status
+      CONCAT(o.name, ' - ', d.name) AS route,
+      b.booking_time,
+      b.amount,
+      b.status,
+      b.ticket_number,
+      b.payment_method,
+      b.payment_status,
+      b.seat_number
     FROM bookings b
+    JOIN passengers p ON b.passenger_id = p.id
     JOIN buses bu ON b.bus_id = bu.id
     JOIN routes r ON b.route_id = r.id
-    JOIN payments p ON b.id = p.booking_id
+    JOIN bus_stops o ON r.origin_bus_stop_id = o.id
+    JOIN bus_stops d ON r.destination_bus_stop_id = d.id
   `, (err, results) => {
     if (err) throw err;
     res.json(results);
   });
 });
 
+// Dashboard summary
 app.get('/dashboard/summary', (req, res) => {
   db.query(`
     SELECT 
@@ -73,51 +97,30 @@ app.get('/dashboard/summary', (req, res) => {
   });
 });
 
+// Get basic bus info
 app.get('/buses', (req, res) => {
-  db.query('SELECT bus_number, capacity, driver FROM buses', (err, results) => {
-    if (err) throw err;
-    res.json(results);
-  });
-});
-
-app.get('/drivers', (req, res) => {
   db.query(`
-    SELECT d.name AS driver, b.bus_number AS assigned_bus 
-    FROM drivers d
-    LEFT JOIN buses b ON d.bus_id = b.id
+    SELECT 
+      bu.bus_number, 
+      bu.capacity, 
+      d.name AS driver
+    FROM buses bu
+    LEFT JOIN drivers d ON bu.driver_id = d.id
   `, (err, results) => {
     if (err) throw err;
     res.json(results);
   });
 });
 
-app.get('/buses/full', (req, res) => {
-  db.query('SELECT bus_number, capacity, driver, status FROM buses', (err, results) => {
-    if (err) throw err;
-    res.json(results);
-  });
-});
-
-app.get('/routes', (req, res) => {
-  db.query('SELECT * FROM routes', (err, results) => {
-    if (err) throw err;
-    res.json(results);
-  });
-});
-
-app.get('/bookings', (req, res) => {
+// Get drivers with assigned bus and availability
+app.get('/drivers', (req, res) => {
   db.query(`
     SELECT 
-      b.id AS booking_id,
-      b.passenger_name,
-      bu.bus_number,
-      CONCAT(r.origin, ' - ', r.destination) AS route,
-      b.booking_date,
-      b.amount,
-      b.status
-    FROM bookings b
-    JOIN buses bu ON b.bus_id = bu.id
-    JOIN routes r ON b.route_id = r.id
+      d.name AS driver, 
+      b.bus_number AS assigned_bus,
+      d.availability
+    FROM drivers d
+    LEFT JOIN buses b ON d.id = b.driver_id
   `, (err, results) => {
     if (err) throw err;
     res.json(results);

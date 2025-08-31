@@ -1,0 +1,125 @@
+==============================
+KSRTC Bus Management System
+==============================
+
+TABLES AND STRUCTURE:
+
+1. bus_stops
+------------------------------
+bus_stops(
+    id INT PRIMARY KEY,
+    name VARCHAR(100),
+    pincode VARCHAR(10),
+    district VARCHAR(100)
+)
+
+2. buses
+------------------------------
+buses(
+    id INT PRIMARY KEY,
+    bus_number VARCHAR(20),
+    capacity INT,
+    driver_id INT,               -- FK -> drivers.id
+    bus_stop_id INT,             -- FK -> bus_stops.id
+    status ENUM('active','maintenance'),
+    bus_type ENUM('AC','Non-AC','Sleeper','Seater')
+)
+
+3. drivers
+------------------------------
+drivers(
+    id INT PRIMARY KEY,
+    name VARCHAR(100),
+    license_number VARCHAR(50) UNIQUE,
+    contact_number VARCHAR(20),
+    address VARCHAR(255),
+    availability ENUM('available','on_leave','on_trip')
+)
+
+4. routes
+------------------------------
+routes(
+    id INT PRIMARY KEY,
+    origin_bus_stop_id INT,      -- FK -> bus_stops.id
+    destination_bus_stop_id INT, -- FK -> bus_stops.id
+    distance_km DECIMAL(6,2),
+    duration_min INT,
+    fare DECIMAL(10,2)
+)
+
+5. staff
+------------------------------
+staff(
+    id INT PRIMARY KEY,
+    name VARCHAR(100),
+    role ENUM('admin','operator','conductor'),
+    email VARCHAR(100) UNIQUE,
+    phone VARCHAR(20),
+    password VARCHAR(255),       -- hashed password
+    salary DECIMAL(10,2),
+    date_joined DATE,
+    status ENUM('active','inactive')
+)
+
+6. passengers
+------------------------------
+passengers(
+    id INT PRIMARY KEY,
+    name VARCHAR(100),
+    email VARCHAR(100) UNIQUE,
+    phone VARCHAR(20),
+    address VARCHAR(255)
+)
+
+7. bookings
+------------------------------
+bookings(
+    id INT PRIMARY KEY,
+    passenger_id INT,            -- FK -> passengers.id
+    bus_id INT,                  -- FK -> buses.id
+    route_id INT,                -- FK -> routes.id
+    seat_number VARCHAR(10),
+    booking_time TIMESTAMP,
+    amount DECIMAL(10,2),
+    status ENUM('confirmed','pending','completed','cancelled'),
+    ticket_number VARCHAR(50) UNIQUE,
+    payment_method ENUM('cash','card','upi','netbanking'),
+    payment_status ENUM('paid','pending','failed')
+)
+
+8. schedules
+------------------------------
+schedules(
+    id INT PRIMARY KEY,
+    bus_id INT,                  -- FK -> buses.id
+    route_id INT,                -- FK -> routes.id
+    departure_time DATETIME,
+    arrival_time DATETIME,
+    driver_id INT,               -- FK -> drivers.id
+    staff_id INT,                -- FK -> staff.id
+    status ENUM('scheduled','delayed','completed','cancelled')
+)
+
+==============================
+RELATIONSHIPS
+==============================
+
+1. buses.driver_id → drivers.id
+   - One driver can be assigned to one bus.
+
+2. buses.bus_stop_id → bus_stops.id
+   - Indicates idle location of the bus.
+
+3. routes.origin_bus_stop_id → bus_stops.id
+   routes.destination_bus_stop_id → bus_stops.id
+
+4. bookings.passenger_id → passengers.id
+5. bookings.bus_id → buses.id
+6. bookings.route_id → routes.id
+
+7. schedules.bus_id → buses.id
+8. schedules.route_id → routes.id
+9. schedules.driver_id → drivers.id
+10. schedules.staff_id → staff.id
+
+==============================

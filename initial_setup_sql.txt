@@ -1,74 +1,243 @@
--- Buses Table
-CREATE TABLE IF NOT EXISTS buses (
+DROP TABLE IF EXISTS schedules;
+DROP TABLE IF EXISTS bookings;
+DROP TABLE IF EXISTS passengers;
+DROP TABLE IF EXISTS staff;
+DROP TABLE IF EXISTS routes;
+DROP TABLE IF EXISTS buses;
+DROP TABLE IF EXISTS drivers;
+DROP TABLE IF EXISTS bus_stops;
+
+-- 1. Bus Stops Table
+CREATE TABLE IF NOT EXISTS bus_stops (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    bus_number VARCHAR(20) NOT NULL,
-    capacity INT NOT NULL,
-    driver VARCHAR(100),
-    status ENUM('active', 'maintenance') DEFAULT 'active'
+    name VARCHAR(100) NOT NULL,
+    pincode VARCHAR(10),
+    district VARCHAR(100)
 );
 
--- Drivers Table
+-- 2. Drivers Table
 CREATE TABLE IF NOT EXISTS drivers (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
     license_number VARCHAR(50) UNIQUE,
-    bus_id INT,
-    FOREIGN KEY (bus_id) REFERENCES buses(id) ON DELETE SET NULL
+    contact_number VARCHAR(20),
+    address VARCHAR(255),
+    availability ENUM('available', 'on_leave', 'on_trip') DEFAULT 'available'
 );
 
--- Routes Table
+-- 3. Buses Table
+CREATE TABLE IF NOT EXISTS buses (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    bus_number VARCHAR(20) NOT NULL,
+    capacity INT NOT NULL,
+    driver_id INT,
+    bus_stop_id INT, -- where the bus resides when not in use
+    status ENUM('active', 'maintenance') DEFAULT 'active',
+    bus_type ENUM('AC', 'Non-AC', 'Sleeper', 'Seater') DEFAULT 'Seater',
+    FOREIGN KEY (driver_id) REFERENCES drivers(id) ON DELETE SET NULL,
+    FOREIGN KEY (bus_stop_id) REFERENCES bus_stops(id)
+);
+
+-- 4. Routes Table
 CREATE TABLE IF NOT EXISTS routes (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    origin VARCHAR(100) NOT NULL,
-    destination VARCHAR(100) NOT NULL,
-    distance_km DECIMAL(6,2) NOT NULL
+    origin_bus_stop_id INT NOT NULL,
+    destination_bus_stop_id INT NOT NULL,
+    distance_km DECIMAL(6,2) NOT NULL,
+    duration_min INT,
+    fare DECIMAL(10,2) NOT NULL,
+    FOREIGN KEY (origin_bus_stop_id) REFERENCES bus_stops(id),
+    FOREIGN KEY (destination_bus_stop_id) REFERENCES bus_stops(id)
 );
 
--- Bookings Table (Updated)
+-- 5. Staff Table
+CREATE TABLE IF NOT EXISTS staff (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    role ENUM('admin', 'operator', 'conductor') DEFAULT 'operator',
+    email VARCHAR(100) UNIQUE,
+    phone VARCHAR(20),
+    password VARCHAR(255) NOT NULL, -- store hashed passwords
+    salary DECIMAL(10,2),
+    date_joined DATE NOT NULL,
+    status ENUM('active', 'inactive') DEFAULT 'active'
+);
+
+-- 6. Passengers Table
+CREATE TABLE IF NOT EXISTS passengers (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    email VARCHAR(100) UNIQUE,
+    phone VARCHAR(20),
+    address VARCHAR(255)
+);
+
+-- 7. Bookings Table
 CREATE TABLE IF NOT EXISTS bookings (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    passenger_name VARCHAR(100) NOT NULL,
+    passenger_id INT NOT NULL,
     bus_id INT NOT NULL,
     route_id INT NOT NULL,
     seat_number VARCHAR(10),
-    booking_date DATE NOT NULL,
+    booking_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP, -- replaces booking_date, payment_date, created_at
     amount DECIMAL(10,2) NOT NULL,
     status ENUM('confirmed', 'pending', 'completed', 'cancelled') DEFAULT 'confirmed',
+    ticket_number VARCHAR(50) UNIQUE,
+    payment_method ENUM('cash', 'card', 'upi', 'netbanking') DEFAULT 'cash',
+    payment_status ENUM('paid', 'pending', 'failed') DEFAULT 'paid',
+    FOREIGN KEY (passenger_id) REFERENCES passengers(id),
     FOREIGN KEY (bus_id) REFERENCES buses(id),
     FOREIGN KEY (route_id) REFERENCES routes(id)
 );
 
--- Insert Buses
-INSERT INTO buses (bus_number, capacity, driver, status) VALUES
-('KL-15-AB-1234', 50, 'Rajeev Menon', 'active'),
-('KL-01-CD-5678', 45, 'Suresh Kumar', 'active'),
-('KL-07-EF-9012', 55, 'Anitha Nair', 'maintenance'),
-('KL-05-GH-3456', 40, 'Vijayan Pillai', 'active'),
-('KL-08-IJ-6789', 50, 'Latha Suresh', 'active');
+-- 8. Schedules Table
+CREATE TABLE IF NOT EXISTS schedules (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    bus_id INT NOT NULL,
+    route_id INT NOT NULL,
+    departure_time DATETIME NOT NULL,
+    arrival_time DATETIME NOT NULL,
+    driver_id INT,
+    staff_id INT, -- operator or conductor
+    status ENUM('scheduled', 'delayed', 'completed', 'cancelled') DEFAULT 'scheduled',
+    FOREIGN KEY (bus_id) REFERENCES buses(id),
+    FOREIGN KEY (route_id) REFERENCES routes(id),
+    FOREIGN KEY (driver_id) REFERENCES drivers(id),
+    FOREIGN KEY (staff_id) REFERENCES staff(id)
+);
+
+
+
+
+-- Insert Bus Stops
+INSERT INTO bus_stops (name, pincode, district) VALUES
+('Thiruvananthapuram Bus Stand', '695001', 'Thiruvananthapuram'),
+('Kollam Bus Stand', '691001', 'Kollam'),
+('Kochi Bus Stand', '682001', 'Ernakulam'),
+('Thrissur Bus Stand', '680001', 'Thrissur'),
+('Kozhikode Bus Stand', '673001', 'Kozhikode'),
+('Kannur Bus Stand', '670001', 'Kannur'),
+('Alappuzha Bus Stand', '688001', 'Alappuzha'),
+('Kottayam Bus Stand', '686001', 'Kottayam'),
+('Palakkad Bus Stand', '678001', 'Palakkad'),
+('Malappuram Bus Stand', '676001', 'Malappuram');
 
 -- Insert Drivers
-INSERT INTO drivers (name, license_number, bus_id) VALUES
-('Rajeev Menon', 'DL04201500001', 1),
-('Suresh Kumar', 'DL05201800002', 2),
-('Anitha Nair', 'DL03202200003', 3),
-('Vijayan Pillai', 'DL06201900004', 4),
-('Latha Suresh', 'DL01202000005', 5),
-('Manoj Prabhakar', 'DL07202100006', NULL);
+INSERT INTO drivers (name, license_number, contact_number, address, availability) VALUES
+('Rajeev Menon', 'DL04201500001', '9447000001', 'Trivandrum', 'available'),
+('Suresh Kumar', 'DL05201800002', '9447000002', 'Ernakulam', 'on_trip'),
+('Anitha Nair', 'DL03202200003', '9447000003', 'Kozhikode', 'available'),
+('Vijayan Pillai', 'DL06201900004', '9447000004', 'Alappuzha', 'on_leave'),
+('Latha Suresh', 'DL01202000005', '9447000005', 'Palakkad', 'available'),
+('Manoj Prabhakar', 'DL07202100006', '9447000006', 'Thrissur', 'available');
 
--- Insert Routes (Kerala locations)
-INSERT INTO routes (origin, destination, distance_km) VALUES
-('Thiruvananthapuram', 'Kollam', 65.5),
-('Kochi', 'Thrissur', 86.0),
-('Kozhikode', 'Kannur', 93.2),
-('Alappuzha', 'Kottayam', 53.7),
-('Palakkad', 'Malappuram', 78.4),
-('Thiruvananthapuram', 'Kanyakumari', 87.0),
-('Thrissur', 'Palakkad', 80.2);
+-- Insert Buses
+INSERT INTO buses (bus_number, capacity, driver_id, bus_stop_id, status, bus_type) VALUES
+('KL-15-AB-1234', 50, 1, 1, 'active', 'AC'),
+('KL-01-CD-5678', 45, 2, 3, 'active', 'Non-AC'),
+('KL-07-EF-9012', 55, 3, 5, 'maintenance', 'Sleeper'),
+('KL-05-GH-3456', 40, 4, 7, 'active', 'Seater'),
+('KL-08-IJ-6789', 50, 5, 9, 'active', 'AC');
 
--- Insert Bookings (Updated with status and amount)
-INSERT INTO bookings (passenger_name, bus_id, route_id, seat_number, booking_date, amount, status) VALUES
-('Aravind S', 1, 1, 'A12', '2023-10-15', 250.00, 'confirmed'),
-('Meera M', 2, 2, 'B07', '2023-10-16', 180.00, 'pending'),
-('Santhosh P', 3, 3, 'C21', '2023-10-17', 220.00, 'completed'),
-('Lakshmi V', 4, 4, 'D15', '2023-10-18', 150.00, 'cancelled'),
-('Vishnu R', 5, 5, 'E09', '2023-10-19', 280.00, 'confirmed');
+-- Insert Staff
+INSERT INTO staff (name, role, email, phone, password, salary, date_joined, status) VALUES
+('Anil Kumar', 'admin', 'anil@ksrtc.com', '9447010001', 'hashed_pw1', 50000, '2020-01-10', 'active'),
+('Rekha Nair', 'operator', 'rekha@ksrtc.com', '9447010002', 'hashed_pw2', 30000, '2021-03-12', 'active'),
+('Sajith R', 'conductor', 'sajith@ksrtc.com', '9447010003', 'hashed_pw3', 28000, '2021-05-15', 'active'),
+('Vineetha P', 'operator', 'vineetha@ksrtc.com', '9447010004', 'hashed_pw4', 32000, '2022-02-20', 'active'),
+('Manoj S', 'conductor', 'manoj@ksrtc.com', '9447010005', 'hashed_pw5', 29000, '2022-07-18', 'active');
+
+-- Insert Routes
+INSERT INTO routes (origin_bus_stop_id, destination_bus_stop_id, distance_km, duration_min, fare) VALUES
+(1, 2, 65.5, 90, 250.00),
+(3, 4, 86.0, 120, 180.00),
+(5, 6, 93.2, 130, 220.00),
+(7, 8, 53.7, 75, 150.00),
+(9, 10, 78.4, 110, 280.00),
+(1, 6, 87.0, 140, 300.00),
+(4, 9, 80.2, 115, 200.00);
+
+-- Insert Passengers (25 rows)
+INSERT INTO passengers (name, email, phone, address) VALUES
+('Aravind S','aravind@example.com','9447100001','Trivandrum'),
+('Meera M','meera@example.com','9447100002','Kochi'),
+('Santhosh P','santhosh@example.com','9447100003','Kozhikode'),
+('Lakshmi V','lakshmi@example.com','9447100004','Alappuzha'),
+('Vishnu R','vishnu@example.com','9447100005','Palakkad'),
+('Anjali K','anjali@example.com','9447100006','Thrissur'),
+('Ramesh P','ramesh@example.com','9447100007','Kannur'),
+('Deepa S','deepa@example.com','9447100008','Malappuram'),
+('Ajay N','ajay@example.com','9447100009','Kottayam'),
+('Nithin R','nithin@example.com','9447100010','Ernakulam'),
+('Priya V','priya@example.com','9447100011','Thrissur'),
+('Rahul M','rahul@example.com','9447100012','Kollam'),
+('Shalini P','shalini@example.com','9447100013','Trivandrum'),
+('Vineeth K','vineeth@example.com','9447100014','Kozhikode'),
+('Hemanth S','hemanth@example.com','9447100015','Palakkad'),
+('Leena R','leena@example.com','9447100016','Alappuzha'),
+('Manju N','manju@example.com','9447100017','Kannur'),
+('Kiran P','kiran@example.com','9447100018','Thrissur'),
+('Sowmya V','sowmya@example.com','9447100019','Ernakulam'),
+('Ajith R','ajith@example.com','9447100020','Malappuram'),
+('Nisha M','nisha@example.com','9447100021','Kottayam'),
+('Vimal P','vimal@example.com','9447100022','Kollam'),
+('Devika S','devika@example.com','9447100023','Trivandrum'),
+('Arjun K','arjun@example.com','9447100024','Thrissur'),
+('Fahad R','fahad@example.com','9447100025','Kochi');
+
+-- Insert Bookings (25 rows)
+INSERT INTO bookings (passenger_id, bus_id, route_id, seat_number, booking_time, amount, status, ticket_number, payment_method, payment_status) VALUES
+(1,1,1,'A12','2023-10-15 09:00:00',250.00,'confirmed','TICK001','card','paid'),
+(2,2,2,'B07','2023-10-16 10:00:00',180.00,'pending','TICK002','upi','pending'),
+(3,3,3,'C21','2023-10-17 11:00:00',220.00,'completed','TICK003','cash','paid'),
+(4,4,4,'D15','2023-10-18 12:00:00',150.00,'cancelled','TICK004','card','failed'),
+(5,5,5,'E09','2023-10-19 13:00:00',280.00,'confirmed','TICK005','netbanking','paid'),
+(6,1,1,'A13','2023-10-20 09:30:00',250.00,'confirmed','TICK006','card','paid'),
+(7,2,2,'B08','2023-10-21 10:30:00',180.00,'pending','TICK007','upi','pending'),
+(8,3,3,'C22','2023-10-22 11:30:00',220.00,'completed','TICK008','cash','paid'),
+(9,4,4,'D16','2023-10-23 12:30:00',150.00,'cancelled','TICK009','card','failed'),
+(10,5,5,'E10','2023-10-24 13:30:00',280.00,'confirmed','TICK010','netbanking','paid'),
+(11,1,1,'A14','2023-10-25 09:45:00',250.00,'confirmed','TICK011','card','paid'),
+(12,2,2,'B09','2023-10-26 10:45:00',180.00,'pending','TICK012','upi','pending'),
+(13,3,3,'C23','2023-10-27 11:45:00',220.00,'completed','TICK013','cash','paid'),
+(14,4,4,'D17','2023-10-28 12:45:00',150.00,'cancelled','TICK014','card','failed'),
+(15,5,5,'E11','2023-10-29 13:45:00',280.00,'confirmed','TICK015','netbanking','paid'),
+(16,1,1,'A15','2023-10-30 09:50:00',250.00,'confirmed','TICK016','card','paid'),
+(17,2,2,'B10','2023-10-31 10:50:00',180.00,'pending','TICK017','upi','pending'),
+(18,3,3,'C24','2023-11-01 11:50:00',220.00,'completed','TICK018','cash','paid'),
+(19,4,4,'D18','2023-11-02 12:50:00',150.00,'cancelled','TICK019','card','failed'),
+(20,5,5,'E12','2023-11-03 13:50:00',280.00,'confirmed','TICK020','netbanking','paid'),
+(21,1,1,'A16','2023-11-04 09:55:00',250.00,'confirmed','TICK021','card','paid'),
+(22,2,2,'B11','2023-11-05 10:55:00',180.00,'pending','TICK022','upi','pending'),
+(23,3,3,'C25','2023-11-06 11:55:00',220.00,'completed','TICK023','cash','paid'),
+(24,4,4,'D19','2023-11-07 12:55:00',150.00,'cancelled','TICK024','card','failed'),
+(25,5,5,'E13','2023-11-08 13:55:00',280.00,'confirmed','TICK025','netbanking','paid');
+
+-- Insert Schedules
+INSERT INTO schedules (bus_id, route_id, departure_time, arrival_time, driver_id, staff_id, status) VALUES
+(1,1,'2023-10-15 08:00:00','2023-10-15 09:30:00',1,2,'scheduled'),
+(2,2,'2023-10-16 09:00:00','2023-10-16 11:00:00',2,3,'scheduled'),
+(3,3,'2023-10-17 10:00:00','2023-10-17 12:10:00',3,4,'scheduled'),
+(4,4,'2023-10-18 11:00:00','2023-10-18 12:15:00',4,5,'scheduled'),
+(5,5,'2023-10-19 12:00:00','2023-10-19 13:50:00',5,1,'scheduled'),
+(1,1,'2023-10-20 08:00:00','2023-10-20 09:30:00',1,2,'scheduled'),
+(2,2,'2023-10-21 09:00:00','2023-10-21 11:00:00',2,3,'scheduled'),
+(3,3,'2023-10-22 10:00:00','2023-10-22 12:10:00',3,4,'scheduled'),
+(4,4,'2023-10-23 11:00:00','2023-10-23 12:15:00',4,5,'scheduled'),
+(5,5,'2023-10-24 12:00:00','2023-10-24 13:50:00',5,1,'scheduled');
+
+
+SELECT * FROM bus_stops;
+SELECT * FROM drivers;
+SELECT * FROM buses;
+SELECT * FROM routes;
+SELECT * FROM staff;
+SELECT * FROM passengers;
+SELECT * FROM bookings;
+SELECT * FROM schedules;
+
+
+SELECT table_name, table_rows
+FROM information_schema.tables
+WHERE table_schema = 'DBMS_Project' -- replace with your database name
+  AND table_name IN ('bus_stops', 'drivers', 'buses', 'routes', 'staff', 'passengers', 'bookings', 'schedules');
