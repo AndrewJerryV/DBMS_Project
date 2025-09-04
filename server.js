@@ -30,39 +30,39 @@ app.get('/drivers/list', (req, res) => {
 
 // Get bus stops list for dropdown
 app.get('/bus_stops/list', (req, res) => {
-    db.query('SELECT id, name FROM bus_stops', (err, results) => {
-      if (err) throw err;
-      res.json(results);
-    });
+  db.query('SELECT id, name FROM bus_stops', (err, results) => {
+    if (err) throw err;
+    res.json(results);
+  });
 });
 
 // Get buses list for dropdown
 app.get('/buses/list', (req, res) => {
-    db.query('SELECT id, bus_number FROM buses WHERE status = "active"', (err, results) => {
-      if (err) throw err;
-      res.json(results);
-    });
+  db.query('SELECT id, bus_number FROM buses WHERE status = "active"', (err, results) => {
+    if (err) throw err;
+    res.json(results);
+  });
 });
 
 // Get routes list for dropdown
 app.get('/routes/list', (req, res) => {
-    db.query(`
+  db.query(`
         SELECT r.id, CONCAT(o.name, ' -> ', d.name) AS route_name 
         FROM routes r
         JOIN bus_stops o ON r.origin_bus_stop_id = o.id
         JOIN bus_stops d ON r.destination_bus_stop_id = d.id
     `, (err, results) => {
-      if (err) throw err;
-      res.json(results);
-    });
+    if (err) throw err;
+    res.json(results);
+  });
 });
 
 // Get passengers list for dropdown
 app.get('/passengers/list', (req, res) => {
-    db.query('SELECT id, name FROM passengers', (err, results) => {
-      if (err) throw err;
-      res.json(results);
-    });
+  db.query('SELECT id, name FROM passengers', (err, results) => {
+    if (err) throw err;
+    res.json(results);
+  });
 });
 
 
@@ -87,8 +87,8 @@ app.post('/routes', (req, res) => {
   const sql = 'INSERT INTO routes (origin_bus_stop_id, destination_bus_stop_id, distance_km, duration_min, fare) VALUES (?, ?, ?, ?, ?)';
   db.query(sql, [origin_bus_stop_id, destination_bus_stop_id, distance_km, duration_min, fare], (err, result) => {
     if (err) {
-        console.error(err);
-        return res.status(500).json({ error: err.message });
+      console.error(err);
+      return res.status(500).json({ error: err.message });
     }
     res.status(201).json({ message: 'Route added successfully!', routeId: result.insertId });
   });
@@ -100,19 +100,118 @@ app.post('/bookings', (req, res) => {
   // Generate a unique ticket number
   const ticket_number = `KSRTC-${Date.now()}`;
   const booking_time = new Date();
-  
+
   const sql = `INSERT INTO bookings (passenger_id, bus_id, route_id, seat_number, booking_time, amount, status, ticket_number, payment_method, payment_status) 
                VALUES (?, ?, ?, ?, ?, ?, 'confirmed', ?, ?, ?)`;
-               
+
   db.query(sql, [passenger_id, bus_id, route_id, seat_number, booking_time, amount, ticket_number, payment_method, payment_status], (err, result) => {
     if (err) {
-        console.error(err);
-        return res.status(500).json({ error: err.message });
+      console.error(err);
+      return res.status(500).json({ error: err.message });
     }
     res.status(201).json({ message: 'Booking created successfully!', bookingId: result.insertId });
   });
 });
 
+// --- NEW PUT Endpoints for Updates ---
+app.put('/buses/:id', (req, res) => {
+  const { id } = req.params;
+  const { bus_number, capacity, driver_id, bus_stop_id, status, bus_type } = req.body;
+  const sql = 'UPDATE buses SET bus_number = ?, capacity = ?, driver_id = ?, bus_stop_id = ?, status = ?, bus_type = ? WHERE id = ?';
+  db.query(sql, [bus_number, capacity, driver_id || null, bus_stop_id || null, status, bus_type, id], (err, result) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json({ message: 'Bus updated successfully!' });
+  });
+});
+app.put('/routes/:id', (req, res) => {
+  const { id } = req.params;
+  const { origin_bus_stop_id, destination_bus_stop_id, distance_km, duration_min, fare } = req.body;
+  const sql = 'UPDATE routes SET origin_bus_stop_id = ?, destination_bus_stop_id = ?, distance_km = ?, duration_min = ?, fare = ? WHERE id = ?';
+  db.query(sql, [origin_bus_stop_id, destination_bus_stop_id, distance_km, duration_min, fare, id], (err, result) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json({ message: 'Route updated successfully!' });
+  });
+});
+app.put('/bookings/:id/cancel', (req, res) => {
+  const { id } = req.params;
+  const sql = "UPDATE bookings SET status = 'cancelled' WHERE id = ?";
+  db.query(sql, [id], (err, result) => {
+    if (err) return res.status(500).json({ error: err.message });
+    if (result.affectedRows === 0) return res.status(404).json({ error: 'Booking not found.' });
+    res.json({ message: 'Booking cancelled successfully!' });
+  });
+});
+
+// --- NEW DELETE Endpoints ---
+app.delete('/routes/:id', (req, res) => {
+  const { id } = req.params;
+  db.query('DELETE FROM routes WHERE id = ?', [id], (err, result) => {
+    if (err) return res.status(500).json({ error: 'Cannot delete route. It might be associated with existing bookings or schedules.' });
+    if (result.affectedRows === 0) return res.status(404).json({ error: 'Route not found.' });
+    res.json({ message: 'Route deleted successfully!' });
+  });
+});
+// DELETE Bus (with dependency check)
+app.delete('/buses/:id', (req, res) => {
+  const { id } = req.params;
+  const { force } = req.query; // Check for a 'force' flag
+
+  // If the 'force' flag is present, bypass the dependency check
+  if (force === 'true') {
+    db.query('DELETE FROM buses WHERE id = ?', [id], (err, result) => {
+      if (err) {
+        console.error(err);
+        return res.status(500).json({ error: 'Database error while deleting.' });
+      }
+      if (result.affectedRows === 0) {
+        return res.status(404).json({ error: 'Bus not found.' });
+      }
+      res.json({ message: 'Bus deleted successfully.' });
+    });
+    return;
+  }
+
+  // Check for dependencies in schedules and bookings
+  db.query('SELECT route_id FROM schedules WHERE bus_id = ? LIMIT 2', [id], (err, schedules) => {
+    if (err) return res.status(500).json({ error: 'Database error while checking dependencies.' });
+    db.query('SELECT id FROM bookings WHERE bus_id = ? LIMIT 2', [id], (err, bookings) => {
+      if (err) return res.status(500).json({ error: 'Database error while checking dependencies.' });
+
+      let message = '';
+      let conflict = false;
+
+      if (schedules.length > 0) {
+        conflict = true;
+        message += `Bus is part of route: R${schedules[0].route_id.toString().padStart(3, '0')}`;
+        if (schedules.length > 1) message += '...';
+      }
+
+      if (bookings.length > 0) {
+        conflict = true;
+        if (schedules.length > 0) message += ' and ';
+        message += `has existing bookings: B${bookings[0].id.toString().padStart(3, '0')}`;
+        if (bookings.length > 1) message += '...';
+      }
+
+      if (conflict) {
+        // Return a 409 Conflict status with the warning message
+        return res.status(409).json({ error: message });
+      }
+
+      // No dependencies, proceed with deletion
+      db.query('DELETE FROM buses WHERE id = ?', [id], (err, result) => {
+        if (err) {
+          console.error(err);
+          return res.status(500).json({ error: 'Database error while deleting.' });
+        }
+        if (result.affectedRows === 0) {
+          return res.status(404).json({ error: 'Bus not found.' });
+        }
+        res.json({ message: 'Bus deleted successfully.' });
+      });
+    });
+  });
+});
 
 // Get full bus info
 app.get('/buses/full', (req, res) => {
@@ -225,6 +324,7 @@ app.get('/drivers', (req, res) => {
     res.json(results);
   });
 });
+
 app.post('/staff/login', (req, res) => {
   const { email, password } = req.body;
 
@@ -241,24 +341,42 @@ app.post('/staff/login', (req, res) => {
 
     const staff = results[0];
     console.log("Input:", password);
-console.log("Stored:", staff.password);
+    console.log("Stored:", staff.password);
     // Compare the input password with existing data
     if (password !== staff.password) {
       return res.status(401).json({ error: 'Invalid email or password' });
     }
 
     // Login success
-    res.json({ 
-      message: 'Login successful', 
-      staffId: staff.id, 
-      name: staff.name, 
-      role: staff.role, 
-      status: staff.status 
+    res.json({
+      message: 'Login successful',
+      staffId: staff.id,
+      name: staff.name,
+      role: staff.role,
+      status: staff.status
     });
   });
 });
 
+// Get a single bus's details
+app.get('/buses/details/:id', (req, res) => {
+  const { id } = req.params;
+  db.query('SELECT * FROM buses WHERE id = ?', [id], (err, results) => {
+    if (err) return res.status(500).json({ error: err.message });
+    if (results.length === 0) return res.status(404).json({ error: 'Bus not found.' });
+    res.json(results[0]);
+  });
+});
 
+// Get a single route's details
+app.get('/routes/details/:id', (req, res) => {
+  const { id } = req.params;
+  db.query('SELECT * FROM routes WHERE id = ?', [id], (err, results) => {
+    if (err) return res.status(500).json({ error: err.message });
+    if (results.length === 0) return res.status(404).json({ error: 'Route not found.' });
+    res.json(results[0]);
+  });
+});
 
 // Execute custom SQL query (only SELECT queries for safety)
 app.get('/query', (req, res) => {
