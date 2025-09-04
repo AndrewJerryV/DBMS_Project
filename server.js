@@ -126,5 +126,39 @@ app.get('/drivers', (req, res) => {
     res.json(results);
   });
 });
+app.post('/staff/login', (req, res) => {
+  const { email, password } = req.body;
+
+  // Query staff by email
+  db.query('SELECT * FROM staff WHERE email = ?', [email], (err, results) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).json({ error: 'Database error' });
+    }
+
+    if (results.length === 0) {
+      return res.status(401).json({ error: 'Invalid email or password' });
+    }
+
+    const staff = results[0];
+    console.log("Input:", password);
+console.log("Stored:", staff.password);
+    // Compare the input password with existing data
+    if (password !== staff.password) {
+      return res.status(401).json({ error: 'Invalid email or password' });
+    }
+
+    // Login success
+    res.json({ 
+      message: 'Login successful', 
+      staffId: staff.id, 
+      name: staff.name, 
+      role: staff.role, 
+      status: staff.status 
+    });
+  });
+});
+
+
 
 app.listen(3000, () => console.log('Server running on http://localhost:3000'));
