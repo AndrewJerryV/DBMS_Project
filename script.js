@@ -99,6 +99,88 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
+  // --- Chart Rendering ---
+  let bookingsChartInstance = null, utilizationChartInstance =null; // Store chart instances globally
+
+  function renderBookingsChart() {
+    // Fetch data from the new backend endpoint
+    fetch(`${API_BASE_URL}/dashboard/bookings-by-day`)
+      .then(response => response.json())
+      .then(chartData => {
+        const ctx = document.getElementById('bookingsChart').getContext('2d');
+        
+        if (bookingsChartInstance) {
+          bookingsChartInstance.destroy(); 
+        }
+
+        bookingsChartInstance = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: chartData.labels, // Use labels from API
+            datasets: [{
+              label: 'Bookings',
+              data: chartData.data, // Use data from API
+              backgroundColor: 'rgba(240, 101, 43, 0.2)',
+              borderColor: 'rgba(240, 101, 43, 1)',
+              borderWidth: 1
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              y: {
+                beginAtZero: true,
+                ticks: {
+                    stepSize: 1 // Ensure y-axis shows whole numbers for counts
+                }
+              }
+            }
+          }
+        });
+      })
+      .catch(error => console.error('Error fetching bookings chart data:', error));
+  }
+
+  function renderUtilizationChart() {
+    // Fetch data from the new backend endpoint
+    fetch(`${API_BASE_URL}/dashboard/bus-utilization`)
+      .then(response => response.json())
+      .then(utilizationData => {
+        const ctx = document.getElementById('utilizationChart').getContext('2d');
+        
+        // Transform the fetched data into the format Chart.js needs
+        const labels = utilizationData.map(item => item.status.charAt(0).toUpperCase() + item.status.slice(1)); // Capitalize status
+        const data = utilizationData.map(item => item.count);
+        
+        if (utilizationChartInstance) {
+          utilizationChartInstance.destroy();
+        }
+        
+        utilizationChartInstance = new Chart(ctx, {
+          type: 'doughnut',
+          data: {
+            labels: labels, // Use labels from API
+            datasets: [{
+              label: 'Bus Utilization',
+              data: data, // Use data from API
+              backgroundColor: [
+                'rgba(46, 204, 113, 0.7)',  // Color for 'Active'
+                'rgba(241, 196, 15, 0.7)',  // Color for 'Maintenance'
+                'rgba(231, 76, 60, 0.7)'    // A third color if other statuses exist
+              ],
+              hoverOffset: 4
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+          }
+        });
+      })
+      .catch(error => console.error('Error fetching utilization chart data:', error));
+  }
+
   // --- Data Fetching Functions ---
   function fetchDashboardData() {
     fetch(`${API_BASE_URL}/dashboard/summary`)
@@ -132,6 +214,9 @@ document.addEventListener('DOMContentLoaded', function () {
         });
       })
       .catch(err => console.error('Error fetching drivers:', err));
+
+    renderBookingsChart();
+    renderUtilizationChart();
   }
 
   function fetchBusesData() {
@@ -319,7 +404,34 @@ document.addEventListener('DOMContentLoaded', function () {
       container.querySelector('.confirm-no').onclick = () => { cleanup(); resolve(false); };
     });
   }
+  async function deleteWithForce(endpoint, id, refreshFn) {
+    try {
+      const res = await fetch(`${API_BASE_URL}/${endpoint}/${id}`, { method: 'DELETE' });
+      const result = await res.json();
 
+      if (res.status === 409) { // Conflict detected
+        const userConfirmed = await showConfirmation(result.error + '. Do you want to delete it anyway? This will also delete associated bookings and schedules.');
+        if (userConfirmed) {
+          const forceRes = await fetch(`${API_BASE_URL}/${endpoint}/${id}?force=true`, { method: 'DELETE' });
+          const forceResult = await forceRes.json();
+          if (!forceRes.ok) throw new Error(forceResult.error || `Failed to force delete ${endpoint}.`);
+          showNotification(forceResult.message, 'success');
+        } else {
+          return; // User cancelled
+        }
+      } else if (!res.ok) {
+        throw new Error(result.error || `Failed to delete ${endpoint}.`);
+      } else {
+        showNotification(result.message, 'success');
+      }
+
+      refreshFn();
+      fetchDashboardData();
+    } catch (err) {
+      showNotification(err.message, 'error');
+      console.error(`Error deleting ${endpoint}:`, err);
+    }
+  }
   function fetchBusesData() {
     fetch(`${API_BASE_URL}/buses/full`)
       .then(response => response.json())
@@ -384,17 +496,27 @@ document.addEventListener('DOMContentLoaded', function () {
   document.addEventListener('click', async (e) => {
     const target = e.target.closest('.action-btn');
     if (!target) return;
-    const id = target.closest('tr').dataset.id;
+    const row = target.closest('tr');
+    const id = row.dataset.id;
     const view = target.closest('.view').id;
 
     if (target.classList.contains('edit')) {
       if (view === 'buses-view') openBusModalForEdit(id);
       if (view === 'routes-view') openRouteModalForEdit(id);
     } else if (target.classList.contains('delete')) {
-      if (view === 'buses-view' && await showConfirmation('Are you sure you want to delete this bus?')) deleteItem('buses', id, fetchBusesData);
-      if (view === 'routes-view' && await showConfirmation('Are you sure you want to delete this route?')) deleteItem('routes', id, fetchRoutesData);
+      if (view === 'buses-view') {
+        if (await showConfirmation('Are you sure you want to delete this bus?')) {
+          await deleteWithForce('buses', id, fetchBusesData);
+        }
+      } else if (view === 'routes-view') {
+        if (await showConfirmation('Are you sure you want to delete this route?')) {
+          await deleteWithForce('routes', id, fetchRoutesData);
+        }
+      }
     } else if (target.classList.contains('cancel')) {
       if (await showConfirmation('Are you sure you want to cancel this booking?')) cancelBooking(id);
+    } else if (target.classList.contains('view')) {
+      // Add view logic if needed (not implemented in original code)
     }
   });
 
@@ -573,12 +695,17 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   async function deleteItem(endpoint, id, refreshFn) {
-    const res = await fetch(`${API_BASE_URL}/${endpoint}/${id}`, { method: 'DELETE' });
-    const result = await res.json();
-    if (!res.ok) return showNotification(result.error, 'error');
-    showNotification(result.message, 'success');
-    refreshFn();
-    fetchDashboardData();
+    try {
+      const res = await fetch(`${API_BASE_URL}/${endpoint}/${id}`, { method: 'DELETE' });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || `Failed to delete ${endpoint}.`);
+      showNotification(result.message, 'success');
+      refreshFn();
+      fetchDashboardData();
+    } catch (err) {
+      showNotification(err.message, 'error');
+      console.error(`Error deleting ${endpoint}:`, err);
+    }
   }
 
   async function cancelBooking(id) {

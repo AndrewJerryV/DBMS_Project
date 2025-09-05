@@ -377,3 +377,13 @@ tbody tr:hover {
 .chart-actions button:hover {
   background: var(--light);
 }
+
+#bookingsChart {
+  width: 100% !important;
+  height: 400px !important; /* or whatever height you want */
+}
+
+#utilizationChart {
+  width: 100% !important;
+  height: 400px !important; /* or whatever height you want */
+}

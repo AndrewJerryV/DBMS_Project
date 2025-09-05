@@ -10,21 +10,26 @@
   <style>
     /* Modal styles */
     .modal {
-      display: none; 
-      position: fixed; 
+      display: none;
+      position: fixed;
       z-index: 1000;
       left: 0;
       top: 0;
       width: 100%;
       height: 100%;
-      overflow: auto; 
-      background-color: rgba(0,0,0,0.4);
+      overflow: auto;
+      background-color: rgba(0, 0, 0, 0.4);
       animation: fadeIn 0.3s;
     }
 
     @keyframes fadeIn {
-        from {opacity: 0;}
-        to {opacity: 1;}
+      from {
+        opacity: 0;
+      }
+
+      to {
+        opacity: 1;
+      }
     }
 
     .modal-content {
@@ -38,10 +43,15 @@
       position: relative;
       animation: slideIn 0.3s;
     }
-    
+
     @keyframes slideIn {
-        from {transform: translateY(-50px);}
-        to {transform: translateY(0);}
+      from {
+        transform: translateY(-50px);
+      }
+
+      to {
+        transform: translateY(0);
+      }
     }
 
 
@@ -60,34 +70,39 @@
     }
 
     #modal-form {
-        display: flex;
-        flex-direction: column;
-        gap: 15px;
-        margin-top: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      margin-top: 20px;
     }
+
     #modal-form label {
-        font-weight: bold;
-        font-size: 0.9em;
+      font-weight: bold;
+      font-size: 0.9em;
     }
-    #modal-form input, #modal-form select {
-        padding: 10px;
-        border-radius: 5px;
-        border: 1px solid #ddd;
-        font-size: 1em;
+
+    #modal-form input,
+    #modal-form select {
+      padding: 10px;
+      border-radius: 5px;
+      border: 1px solid #ddd;
+      font-size: 1em;
     }
+
     #modal-form button {
-        padding: 12px 20px;
-        background-color: #d63323;
-        color: white;
-        border: none;
-        border-radius: 5px;
-        cursor: pointer;
-        align-self: flex-end;
-        font-weight: bold;
-        transition: background-color 0.2s;
+      padding: 12px 20px;
+      background-color: #d63323;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      align-self: flex-end;
+      font-weight: bold;
+      transition: background-color 0.2s;
     }
+
     #modal-form button:hover {
-        background-color: #b02a1d;
+      background-color: #b02a1d;
     }
 
     /* Notification styles */
@@ -114,11 +129,13 @@
     }
 
     .notification.error {
-        background-color: #f44336; /* Red */
+      background-color: #f44336;
+      /* Red */
     }
 
     .notification.success {
-        background-color: #4CAF50; /* Green */
+      background-color: #4CAF50;
+      /* Green */
     }
   </style>
 </head>
@@ -189,7 +206,7 @@
             </div>
             <canvas id="bookingsChart"></canvas>
           </div>
-          
+
           <div class="chart-container">
             <div class="chart-header">
               <h3>Bus Utilization</h3>
@@ -197,7 +214,7 @@
             <canvas id="utilizationChart"></canvas>
           </div>
         </div>
-        
+
         <!-- Tables Section -->
         <div class="tables-section">
           <div class="table-container">
@@ -328,6 +345,7 @@
     </div>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <script src="script.js"></script>
 </body>
 

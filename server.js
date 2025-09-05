@@ -65,7 +65,6 @@ app.get('/passengers/list', (req, res) => {
   });
 });
 
-
 // --- NEW POST Endpoints to add data ---
 
 // Add a new bus
@@ -143,46 +142,47 @@ app.put('/bookings/:id/cancel', (req, res) => {
 });
 
 // --- NEW DELETE Endpoints ---
-app.delete('/routes/:id', (req, res) => {
-  const { id } = req.params;
-  db.query('DELETE FROM routes WHERE id = ?', [id], (err, result) => {
-    if (err) return res.status(500).json({ error: 'Cannot delete route. It might be associated with existing bookings or schedules.' });
-    if (result.affectedRows === 0) return res.status(404).json({ error: 'Route not found.' });
-    res.json({ message: 'Route deleted successfully!' });
-  });
-});
-// DELETE Bus (with dependency check)
 app.delete('/buses/:id', (req, res) => {
   const { id } = req.params;
   const { force } = req.query; // Check for a 'force' flag
 
-  // If the 'force' flag is present, bypass the dependency check
   if (force === 'true') {
-    db.query('DELETE FROM buses WHERE id = ?', [id], (err, result) => {
+    // Force delete: remove dependent records first
+    db.query('DELETE FROM bookings WHERE bus_id = ?', [id], (err) => {
       if (err) {
         console.error(err);
-        return res.status(500).json({ error: 'Database error while deleting.' });
+        return res.status(500).json({ error: err.message });
       }
-      if (result.affectedRows === 0) {
-        return res.status(404).json({ error: 'Bus not found.' });
-      }
-      res.json({ message: 'Bus deleted successfully.' });
+      db.query('DELETE FROM schedules WHERE bus_id = ?', [id], (err) => {
+        if (err) {
+          console.error(err);
+          return res.status(500).json({ error: err.message });
+        }
+        db.query('DELETE FROM buses WHERE id = ?', [id], (err, result) => {
+          if (err) {
+            console.error(err);
+            return res.status(500).json({ error: err.message });
+          }
+          if (result.affectedRows === 0) return res.status(404).json({ error: 'Bus not found.' });
+          res.json({ message: 'Bus and associated records deleted successfully.' });
+        });
+      });
     });
     return;
   }
 
   // Check for dependencies in schedules and bookings
-  db.query('SELECT route_id FROM schedules WHERE bus_id = ? LIMIT 2', [id], (err, schedules) => {
-    if (err) return res.status(500).json({ error: 'Database error while checking dependencies.' });
+  db.query('SELECT id FROM schedules WHERE bus_id = ? LIMIT 2', [id], (err, schedules) => {
+    if (err) return res.status(500).json({ error: 'Database error while checking dependencies: ' + err.message });
     db.query('SELECT id FROM bookings WHERE bus_id = ? LIMIT 2', [id], (err, bookings) => {
-      if (err) return res.status(500).json({ error: 'Database error while checking dependencies.' });
+      if (err) return res.status(500).json({ error: 'Database error while checking dependencies: ' + err.message });
 
       let message = '';
       let conflict = false;
 
       if (schedules.length > 0) {
         conflict = true;
-        message += `Bus is part of route: R${schedules[0].route_id.toString().padStart(3, '0')}`;
+        message += `Bus has scheduled trips: S${schedules[0].id.toString().padStart(3, '0')}`;
         if (schedules.length > 1) message += '...';
       }
 
@@ -202,7 +202,7 @@ app.delete('/buses/:id', (req, res) => {
       db.query('DELETE FROM buses WHERE id = ?', [id], (err, result) => {
         if (err) {
           console.error(err);
-          return res.status(500).json({ error: 'Database error while deleting.' });
+          return res.status(500).json({ error: err.message });
         }
         if (result.affectedRows === 0) {
           return res.status(404).json({ error: 'Bus not found.' });
@@ -213,10 +213,80 @@ app.delete('/buses/:id', (req, res) => {
   });
 });
 
+// DELETE Route (with dependency check and force option)
+app.delete('/routes/:id', (req, res) => {
+  const { id } = req.params;
+  const { force } = req.query;
+
+  if (force === 'true') {
+    // Force delete: remove dependent records first
+    db.query('DELETE FROM bookings WHERE route_id = ?', [id], (err) => {
+      if (err) {
+        console.error(err);
+        return res.status(500).json({ error: err.message });
+      }
+      db.query('DELETE FROM schedules WHERE route_id = ?', [id], (err) => {
+        if (err) {
+          console.error(err);
+          return res.status(500).json({ error: err.message });
+        }
+        db.query('DELETE FROM routes WHERE id = ?', [id], (err, result) => {
+          if (err) {
+            console.error(err);
+            return res.status(500).json({ error: err.message });
+          }
+          if (result.affectedRows === 0) return res.status(404).json({ error: 'Route not found.' });
+          res.json({ message: 'Route and associated records deleted successfully!' });
+        });
+      });
+    });
+    return;
+  }
+
+  // Check for dependencies
+  db.query('SELECT id FROM schedules WHERE route_id = ? LIMIT 2', [id], (err, schedules) => {
+    if (err) return res.status(500).json({ error: 'Database error while checking dependencies: ' + err.message });
+    db.query('SELECT id FROM bookings WHERE route_id = ? LIMIT 2', [id], (err, bookings) => {
+      if (err) return res.status(500).json({ error: 'Database error while checking dependencies: ' + err.message });
+
+      let message = '';
+      let conflict = false;
+
+      if (schedules.length > 0) {
+        conflict = true;
+        message += `Route has scheduled trips: S${schedules[0].id.toString().padStart(3, '0')}`;
+        if (schedules.length > 1) message += '...';
+      }
+
+      if (bookings.length > 0) {
+        conflict = true;
+        if (schedules.length > 0) message += ' and ';
+        message += `has existing bookings: B${bookings[0].id.toString().padStart(3, '0')}`;
+        if (bookings.length > 1) message += '...';
+      }
+
+      if (conflict) {
+        return res.status(409).json({ error: message });
+      }
+
+      // No dependencies, proceed with deletion
+      db.query('DELETE FROM routes WHERE id = ?', [id], (err, result) => {
+        if (err) {
+          console.error(err);
+          return res.status(500).json({ error: err.message });
+        }
+        if (result.affectedRows === 0) return res.status(404).json({ error: 'Route not found.' });
+        res.json({ message: 'Route deleted successfully!' });
+      });
+    });
+  });
+});
+
 // Get full bus info
 app.get('/buses/full', (req, res) => {
   db.query(`
     SELECT 
+      bu.id AS id,
       bu.bus_number, 
       bu.capacity, 
       d.name AS driver,
@@ -375,6 +445,59 @@ app.get('/routes/details/:id', (req, res) => {
     if (err) return res.status(500).json({ error: err.message });
     if (results.length === 0) return res.status(404).json({ error: 'Route not found.' });
     res.json(results[0]);
+  });
+});
+
+// Get bookings data for the last 7 days for the bar chart
+app.get('/dashboard/bookings-by-day', (req, res) => {
+  const sql = `
+    SELECT 
+      DATE(booking_time) as date, 
+      COUNT(*) as count 
+    FROM bookings 
+    WHERE booking_time >= CURDATE() - INTERVAL 6 DAY 
+    GROUP BY DATE(booking_time) 
+    ORDER BY date;
+  `;
+  db.query(sql, (err, results) => {
+    if (err) {
+      console.error('Database error:', err);
+      return res.status(500).json({ error: 'Database error fetching chart data' });
+    }
+
+    // Helper to format date as 'YYYY-MM-DD'
+    const formatDate = (date) => date.toISOString().split('T')[0];
+
+    // Create a map of dates to counts from the query results
+    const dataMap = new Map(results.map(row => [formatDate(row.date), row.count]));
+
+    const labels = [];
+    const data = [];
+
+    // Generate labels and data for the last 7 days, filling in 0 for days with no bookings
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date();
+      date.setDate(date.getDate() - i);
+      const formattedDate = formatDate(date);
+      
+      labels.push(formattedDate);
+      data.push(dataMap.get(formattedDate) || 0);
+    }
+    
+    res.json({ labels, data });
+  });
+});
+
+// Get bus status counts for the doughnut chart
+app.get('/dashboard/bus-utilization', (req, res) => {
+  const sql = `SELECT status, COUNT(*) as count FROM buses GROUP BY status;`;
+  db.query(sql, (err, results) => {
+    if (err) {
+      console.error('Database error:', err);
+      return res.status(500).json({ error: 'Database error fetching chart data' });
+    }
+    // The result is already in a good format, e.g., [{status: 'active', count: 10}, ...]
+    res.json(results);
   });
 });
 
