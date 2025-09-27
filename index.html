@@ -155,13 +155,10 @@
 
     <!-- Main Content -->
     <div class="main-content">
-
-
       <!-- Dashboard View -->
       <div id="dashboard-view" class="view active-view">
-        <h1>Dashboard</h1>
-        <!-- Profile Header -->
-        <div class="profile-header">
+        <div class="view-header">
+          <h1>Dashboard</h1>
           <div class="profile-info">
             <div class="profile-icon">
               <i class="fas fa-user-circle"></i>
@@ -169,6 +166,18 @@
             <div class="profile-details">
               <span class="profile-name">Admin User</span>
               <span class="profile-role">Administrator</span>
+            </div>
+            <div class="profile-menu">
+              <ul>
+                <li>Role: <span id="user-role">Admin</span></li>
+                <li class="theme-switcher">
+                  <span>Theme</span>
+                  <label class="switch">
+                    <input type="checkbox" id="theme-toggle">
+                    <span class="slider round"></span>
+                  </label>
+                </li>
+              </ul>
             </div>
           </div>
         </div>
@@ -197,7 +206,7 @@
         <div class="charts-section">
           <div class="chart-container">
             <div class="chart-header">
-              <h3>Bookings Overview (Last 7 Days)</h3>
+              <h3>Bookings Overview</h3>
               <div class="chart-actions">
                 <button>Daily</button>
                 <button>Weekly</button>
@@ -350,3 +359,5 @@
 </body>
 
 </html>
+
+
