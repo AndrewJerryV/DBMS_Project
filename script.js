@@ -268,7 +268,7 @@ document.addEventListener('DOMContentLoaded', function () {
         tbody.innerHTML = '';
         data.forEach(bus => {
           tbody.innerHTML += `
-            <tr>
+            <tr data-id="${bus.id}">
               <td>${bus.bus_number}</td>
               <td>${bus.capacity}</td>
               <td>${bus.driver || '-'}</td>
@@ -292,7 +292,7 @@ document.addEventListener('DOMContentLoaded', function () {
         data.forEach(route => {
           const duration = `${route.hours}h ${route.minutes}m`;
           tbody.innerHTML += `
-            <tr>
+            <tr data-id="${route.route_id}">
               <td>R${route.route_id.toString().padStart(3, '0')}</td>
               <td>${route.origin}</td>
               <td>${route.destination}</td>
@@ -317,7 +317,7 @@ document.addEventListener('DOMContentLoaded', function () {
         data.forEach(booking => {
           const formattedDate = new Date(booking.booking_time).toLocaleDateString();
           tbody.innerHTML += `
-            <tr>
+            <tr data-id="${booking.booking_id}">
               <td>B${booking.booking_id.toString().padStart(3, '0')}</td>
               <td>${booking.passenger_name}</td>
               <td>${booking.bus_number}</td>
@@ -430,7 +430,7 @@ document.addEventListener('DOMContentLoaded', function () {
       const style = document.createElement('style');
       style.innerHTML = `
             .confirm-dialog { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 2000; display: flex; align-items: center; justify-content: center; animation: fadeIn 0.2s; }
-            .confirm-content { background: white; padding: 25px 35px; border-radius: 8px; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.3); animation: slideIn 0.2s; }
+            .confirm-content { background: var(--card-bg); color: var(--text-dark); padding: 25px 35px; border-radius: 8px; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.3); animation: slideIn 0.2s; }
             .confirm-content p { margin: 0 0 20px; font-size: 1.1em; }
             .confirm-buttons button { padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; margin: 0 10px; font-weight: bold; transition: transform 0.1s; }
             .confirm-buttons button:hover { transform: scale(1.05); }
@@ -486,67 +486,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
-  function fetchBusesData() {
-    fetch(`${API_BASE_URL}/buses/full`)
-      .then(response => response.json())
-      .then(data => {
-        const tbody = document.querySelector('#buses-management-table tbody');
-        tbody.innerHTML = data.map(bus => `
-                <tr data-id="${bus.id}"> <td>${bus.bus_number}</td>
-                    <td>${bus.capacity}</td>
-                    <td>${bus.driver || '-'}</td>
-                    <td><span class="status ${bus.status}">${bus.status}</span></td>
-                    <td>
-                        <button class="action-btn edit"><i class="fas fa-edit"></i></button>
-                        <button class="action-btn delete"><i class="fas fa-trash"></i></button>
-                    </td>
-                </tr>`).join('');
-      })
-      .catch(err => console.error('Error fetching buses data:', err));
-  }
-
-  function fetchRoutesData() {
-    fetch(`${API_BASE_URL}/routes`)
-      .then(response => response.json())
-      .then(data => {
-        const tbody = document.querySelector('#routes-management-table tbody');
-        tbody.innerHTML = data.map(route => `
-                <tr data-id="${route.route_id}"> <td>R${route.route_id.toString().padStart(3, '0')}</td>
-                    <td>${route.origin}</td>
-                    <td>${route.destination}</td>
-                    <td>${route.distance_km}</td>
-                    <td>${route.hours}h ${route.minutes}m</td>
-                    <td>
-                        <button class="action-btn edit"><i class="fas fa-edit"></i></button>
-                        <button class="action-btn delete"><i class="fas fa-trash"></i></button>
-                    </td>
-                </tr>`).join('');
-      })
-      .catch(err => console.error('Error fetching routes data:', err));
-  }
-
-  function fetchBookingsData() {
-    fetch(`${API_BASE_URL}/bookings`)
-      .then(response => response.json())
-      .then(data => {
-        const tbody = document.querySelector('#bookings-management-table tbody');
-        tbody.innerHTML = data.map(booking => `
-                <tr data-id="${booking.booking_id}"> <td>B${booking.booking_id.toString().padStart(3, '0')}</td>
-                    <td>${booking.passenger_name}</td>
-                    <td>${booking.bus_number}</td>
-                    <td>${booking.route}</td>
-                    <td>${new Date(booking.booking_time).toLocaleDateString()}</td>
-                    <td>₹${booking.amount}</td>
-                    <td><span class="status ${booking.status}">${booking.status}</span></td>
-                    <td>
-                        <button class="action-btn view"><i class="fas fa-eye"></i></button>
-                        <button class="action-btn cancel"><i class="fas fa-times"></i></button>
-                    </td>
-                </tr>`).join('');
-      })
-      .catch(err => console.error('Error fetching bookings data:', err));
-  }
-
+  // A single, correct event listener for all actions.
   document.addEventListener('click', async (e) => {
     const target = e.target.closest('.action-btn');
     if (!target) return;
@@ -568,9 +508,11 @@ document.addEventListener('DOMContentLoaded', function () {
         }
       }
     } else if (target.classList.contains('cancel')) {
-      if (await showConfirmation('Are you sure you want to cancel this booking?')) cancelBooking(id);
+      if (await showConfirmation('Are you sure you want to cancel this booking?')) {
+        await cancelBooking(id);
+      }
     } else if (target.classList.contains('view')) {
-      // Add view logic if needed (not implemented in original code)
+      // Add view logic if needed
     }
   });
 
@@ -668,78 +610,6 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
-  // --- Generic Delete Handler ---
-  async function deleteItem(endpoint, id, refreshFn) {
-    try {
-      const res = await fetch(`${API_BASE_URL}/${endpoint}/${id}`, {
-        method: 'DELETE'
-      });
-      const result = await res.json();
-      if (!res.ok) throw new Error(result.error || `Failed to delete ${endpoint}.`);
-
-      showNotification(result.message, 'success');
-      refreshFn();
-      fetchDashboardData();
-    } catch (err) {
-      showNotification(err.message, 'error');
-      console.error(`Error deleting ${endpoint}:`, err);
-    }
-  }
-  // --- New Bus Deletion Function with Confirmation ---
-  async function deleteBus(id) {
-    try {
-      const res = await fetch(`${API_BASE_URL}/buses/${id}`, {
-        method: 'DELETE'
-      });
-      const result = await res.json();
-
-      if (res.status === 409) { // Conflict detected
-        const userConfirmed = await showConfirmation(result.error + '. Do you want to delete it anyway?');
-        if (userConfirmed) {
-          const forceRes = await fetch(`${API_BASE_URL}/buses/${id}?force=true`, {
-            method: 'DELETE'
-          });
-          const forceResult = await forceRes.json();
-          if (!forceRes.ok) throw new Error(forceResult.error || 'Failed to force delete bus.');
-          showNotification(forceResult.message, 'success');
-        } else {
-          return; // User cancelled
-        }
-      } else if (!res.ok) {
-        throw new Error(result.error || 'Failed to delete bus.');
-      } else {
-        showNotification(result.message, 'success');
-      }
-
-      fetchBusesData();
-      fetchDashboardData();
-    } catch (err) {
-      showNotification(err.message, 'error');
-      console.error('Error deleting bus:', err);
-    }
-  }
-
-  // Update the main event listener to use the new function
-  document.addEventListener('click', async (e) => {
-    const target = e.target.closest('.action-btn');
-    if (!target) return;
-    const row = target.closest('tr');
-    const id = row.dataset.id;
-    const view = target.closest('.view').id;
-
-    if (target.classList.contains('edit')) {
-      if (view === 'buses-view') openBusModalForEdit(id);
-      if (view === 'routes-view') openRouteModalForEdit(id);
-    } else if (target.classList.contains('delete')) {
-      if (view === 'buses-view') {
-        await deleteBus(id);
-      } else if (view === 'routes-view') {
-        await deleteItem('routes', id, fetchRoutesData);
-      }
-    } else if (target.classList.contains('cancel')) {
-      if (await showConfirmation('Are you sure you want to cancel this booking?')) cancelBooking(id);
-    }
-  });
   // --- Booking Cancellation Handler ---
   async function cancelBooking(id) {
     try {
@@ -752,8 +622,7 @@ document.addEventListener('DOMContentLoaded', function () {
       showNotification(result.message, 'success');
       fetchBookingsData();
       fetchDashboardData();
-    } catch (err)
-    {
+    } catch (err) {
       showNotification(err.message, 'error');
       console.error('Error cancelling booking:', err);
     }

@@ -85,10 +85,6 @@ body {
   transition: all 0.3s ease;
 }
 
-.profile-info:hover {
-  opacity: 0.8;
-}
-
 .profile-icon {
   font-size: 2.5rem;
   color: #3498db;
@@ -143,7 +139,6 @@ body {
 
 .theme-switcher {
   display: flex;
-  justify-content: space-between;
   align-items: center;
 }
 
