@@ -340,7 +340,7 @@
         </div>
       </div>
 
-      <!-- Settings View -->
+      <!-- Settings View
       <div id="settings-view" class="view">
         <div class="view-header">
           <h1>Settings</h1>
@@ -370,7 +370,42 @@
             <button type="submit">Save Changes</button>
           </form>
         </div>
-      </div>
+      </div> -->
+      <!-- ...existing code... -->
+<!-- Settings View -->
+<div id="settings-view" class="view">
+  <div class="view-header">
+    <h1>Settings</h1>
+  </div>
+  <div class="settings-columns">
+    <form id="settings-info-form">
+      <h2>Update Your Information</h2>
+      <label for="settings-name">Name:</label>
+      <input type="text" id="settings-name" name="name" required>
+
+      <label for="settings-email">Email:</label>
+      <input type="email" id="settings-email" name="email" required>
+
+      <label for="settings-phone">Phone:</label>
+      <input type="tel" id="settings-phone" name="phone">
+
+      <button type="submit">Save Info</button>
+    </form>
+    <form id="settings-password-form">
+      <h2>Change Password</h2>
+      <label for="settings-current-password">Current Password:</label>
+      <input type="password" id="settings-current-password" name="current_password" placeholder="Enter current password to change">
+
+      <label for="settings-new-password">New Password:</label>
+      <input type="password" id="settings-new-password" name="new_password" placeholder="Enter new password">
+
+      <label for="settings-confirm-password">Confirm New Password:</label>
+      <input type="password" id="settings-confirm-password" name="confirm_password" placeholder="Confirm new password">
+
+      <button type="submit">Change Password</button>
+    </form>
+  </div>
+</div>
 
     </div>
   </div>

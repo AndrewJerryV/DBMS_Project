@@ -494,3 +494,54 @@ tbody tr:hover {
   height: 400px !important;
 }
 
+.settings-columns {
+    display: flex;
+    gap: 40px;
+    justify-content: center;
+    align-items: flex-start;
+    margin-top: 30px;
+    flex-wrap: wrap;
+  }
+  .settings-columns form {
+    flex: 1 1 300px;
+    min-width: 280px;
+    max-width: 400px;
+    background: var(--modal-content-bg, #fff);
+    padding: 24px 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+  }
+  .settings-columns h2 {
+    margin-bottom: 10px;
+  }
+  .settings-columns button {
+    margin-top: 10px;
+    padding: 10px;
+    background-color:#ffffff;
+    cursor: pointer;
+    border: 1px solid rgba(170, 165, 165, 0.1);
+    border-radius: 4px;
+    font-weight: 500;
+   
+    transition: background-color 0.3s, color 0.3s;    
+  }
+
+  .settings-columns button:hover {
+    background-color: var(--primary);
+    color: white;
+    transition: background-color 0.3s;
+   
+  }
+
+  .settings-columns input{
+    padding: 10px;
+    border: 1px solid var(--input-border, #ddd);
+    border-radius: 4px;
+    font-size: 1rem;
+    color: var(--text-dark);
+    background: var(--card-bg, #fff);
+    transition: border-color 0.3s;
+  }

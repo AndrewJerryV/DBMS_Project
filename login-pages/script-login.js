@@ -1,7 +1,7 @@
 // script-login.js
 
 document.addEventListener("DOMContentLoaded", () => {
-  const form = document.querySelector("form");
+  const form = document.getElementById("login-form");
 
   form.addEventListener("submit", async (e) => {
     e.preventDefault(); // Prevent page reload
@@ -26,12 +26,13 @@ document.addEventListener("DOMContentLoaded", () => {
       });
 
       const data = await response.json();
-
+      console.log("Response Data:", data); 
       if (response.ok) {
         // Login successful
         alert(`Welcome, ${data.name}! Role: ${data.role}`);
-        // Redirect to staff dashboard or another page
-        window.location.href = "/staff-dashboard.html";
+        // Redirect to staff dashboard or another page 
+          localStorage.setItem('staffId', data.staffId);
+          window.location.href = '/index.html';
       } else {
         // Login failed
         alert(data.error || "Login failed");

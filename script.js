@@ -6,8 +6,10 @@ document.addEventListener('DOMContentLoaded', function () {
     dashboard: document.getElementById('dashboard-view'),
     buses: document.getElementById('buses-view'),
     routes: document.getElementById('routes-view'),
-    bookings: document.getElementById('bookings-view')
+    bookings: document.getElementById('bookings-view'),
+      settings: document.getElementById('settings-view')
   };
+
 
   // Initialize menu items
   const menuItems = document.querySelectorAll('.sidebar li');
@@ -584,6 +586,8 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
+  
+  
   // --- Generic Update Handler ---
   async function handleFormUpdate(endpoint, id, refreshFn, e) {
     e.preventDefault();
@@ -610,6 +614,62 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
+
+    // ...existing code...
+
+// Get staffId from localStorage (set after login)
+const staffId = localStorage.getItem('staffId');
+
+// Protect dashboard: redirect to login if not logged in
+if (!staffId) {
+  window.location.href = 'login-pages/staff.html';
+}
+
+// Settings Info Form Submission
+document.getElementById('settings-info-form').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  const data = {
+    name: document.getElementById('settings-name').value,
+    email: document.getElementById('settings-email').value,
+    phone: document.getElementById('settings-phone').value
+  };
+  try {
+    const res = await fetch(`${API_BASE_URL}/staff/${staffId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    const result = await res.json();
+    if (!res.ok) throw new Error(result.error || 'Failed to update info');
+    showNotification('Information updated successfully!', 'success');
+  } catch (err) {
+    showNotification(err.message, 'error');
+  }
+});
+
+// Settings Password Form Submission
+document.getElementById('settings-password-form').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  const data = {
+    current_password: document.getElementById('settings-current-password').value,
+    new_password: document.getElementById('settings-new-password').value
+  };
+  try {
+    const res = await fetch(`${API_BASE_URL}/staff/${staffId}/password`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    const result = await res.json();
+    if (!res.ok) throw new Error(result.error || 'Failed to change password');
+    showNotification('Password changed successfully!', 'success');
+    document.getElementById('settings-password-form').reset();
+  } catch (err) {
+    showNotification(err.message, 'error');
+  }
+});
+
+// ...existing code...
   // --- Booking Cancellation Handler ---
   async function cancelBooking(id) {
     try {
@@ -628,6 +688,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
+  
   // Initialize dashboard data on first load
   fetchDashboardData();
 });

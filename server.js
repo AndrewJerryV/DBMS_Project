@@ -10,7 +10,7 @@ const db = mysql.createConnection({
   host: 'localhost',
   user: 'root',
   password: 'password@123',
-  database: 'DBMS_Project'
+  database: 'dbm_proj'
 });
 
 db.connect(err => {
@@ -518,5 +518,54 @@ app.get('/query', (req, res) => {
     res.json(results);
   });
 });
+  // ...existing code...
+// ...existing code...
+// Update staff info
+app.put('/staff/:id', (req, res) => {
+  const { id } = req.params;
+  const { name, email, phone } = req.body;
+  db.query(
+    'UPDATE staff SET name = ?, email = ?, phone = ? WHERE id = ?',
+    [name, email, phone, id],
+    (err, result) => {
+      if (err) {
+        console.error(err);
+        return res.status(500).json({ error: 'Database error' });
+      }
+      if (result.affectedRows === 0) {
+        return res.status(404).json({ error: 'Staff not found' });
+      }
+      res.json({ message: 'Information updated successfully' });
+    }
+  );
+});
 
+// Change staff password (plain text, NOT recommended for production)
+app.put('/staff/:id/password', (req, res) => {
+  const { id } = req.params;
+  const { current_password, new_password } = req.body;
+  // 1. Get current password from DB
+  db.query('SELECT password FROM staff WHERE id = ?', [id], (err, results) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).json({ error: 'Database error' });
+    }
+    if (results.length === 0) {
+      return res.status(404).json({ error: 'Staff not found' });
+    }
+    const staff = results[0];
+    // 2. Check if current password matches
+    if (current_password !== staff.password) {
+      return res.status(400).json({ error: 'Current password is incorrect' });
+    }
+    // 3. Update password
+    db.query('UPDATE staff SET password = ? WHERE id = ?', [new_password, id], (err) => {
+      if (err) {
+        console.error(err);
+        return res.status(500).json({ error: 'Database error' });
+      }
+      res.json({ message: 'Password changed successfully' });
+    });
+  });
+});
 app.listen(3000, () => console.log('Server running on http://localhost:3000'));
