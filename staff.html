@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Staff Login - KSRTC</title>
+  <link rel="icon" href="../assets/icon32.ico" type="image/x-icon">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f3f4f6;
+      /* light gray */
+      display: flex;
+      height: 100vh;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      background: #1f2937;
+      /* dark navy */
+      color: white;
+      width: 35%;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+
+    .sidebar img {
+      width: 100px;
+      margin-bottom: 20px;
+    }
+
+    .sidebar h1 {
+      font-size: 28px;
+      margin-bottom: 10px;
+    }
+
+    .sidebar p {
+      color: #d1d5db;
+      /* lighter gray text */
+    }
+
+    /* Login Form */
+    .login-container {
+      flex: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .login-box {
+      background: white;
+      padding: 40px;
+      border-radius: 16px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+      width: 100%;
+      max-width: 400px;
+    }
+
+    .login-box h2 {
+      text-align: center;
+      margin-bottom: 20px;
+      color: #1f2937;
+    }
+
+    .form-group {
+      margin-bottom: 15px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 6px;
+      font-weight: bold;
+      color: #374151;
+    }
+
+    input {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #d1d5db;
+      border-radius: 10px;
+      outline: none;
+    }
+
+    input:focus {
+      border-color: #f97316;
+      /* orange */
+      box-shadow: 0 0 5px rgba(249, 115, 22, 0.5);
+    }
+
+    .btn {
+      width: 100%;
+      padding: 12px;
+      background: #f97316;
+      /* orange */
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 10px;
+      transition: background 0.3s;
+    }
+
+    .btn:hover {
+      background: #ea580c;
+      /* darker orange */
+    }
+
+    .extra {
+      text-align: center;
+      margin-top: 15px;
+      font-size: 14px;
+      color: #6b7280;
+    }
+
+    .extra a {
+      color: #f97316;
+      text-decoration: none;
+      font-weight: bold;
+    }
+
+    textarea {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #d1d5db;
+      border-radius: 10px;
+      outline: none;
+      resize: none;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="sidebar">
+    <img src="\assets\logo.png" alt="KSRTC Logo">
+    <h1>KSRTC Bus Management</h1>
+    <h2 style="color: #f97316;">Staff Login Portal</h2>
+  </div>
+
+  <div class="login-container">
+    <div class="login-box">
+      <h2>Staff Login</h2>
+
+      <div id="error-message" style="color: red; text-align: center; margin-bottom: 15px;"></div>
+
+      <form>
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" placeholder="Enter your email" required>
+        </div>
+
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" placeholder="Enter your password" required>
+        </div>
+
+        <button type="submit" class="btn">Login</button>
+      </form>
+
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const form = document.querySelector("form");
+      const errorMessageDiv = document.getElementById("error-message");
+
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+
+        const email = form.querySelector('input[type="email"]').value.trim();
+        const password = form.querySelector('input[type="password"]').value;
+        errorMessageDiv.textContent = ''; // Clear previous errors
+
+        if (!email || !password) {
+          errorMessageDiv.textContent = "Please fill in all fields!";
+          return;
+        }
+
+        try {
+          const response = await fetch("http://localhost:3000/staff/login", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              email,
+              password
+            })
+          });
+
+          const data = await response.json();
+          console.log("Response Data:", data);
+
+          if (response.ok) {
+            // On successful login, save the ID and details
+            localStorage.setItem('staffId', data.staffId);
+            localStorage.setItem('staffDetails', JSON.stringify(data));
+
+            // Redirect to the main dashboard. 
+            // This path assumes the dashboard (index.html) is one directory above this file.
+            window.location.href = "./index.html";
+          } else {
+            errorMessageDiv.textContent = data.error || "Login failed. Please try again.";
+          }
+        } catch (err) {
+          console.error(err);
+          errorMessageDiv.textContent = "Server error. Please try again later.";
+        }
+      });
+    });
+  </script>
+</body>
+
+</html>

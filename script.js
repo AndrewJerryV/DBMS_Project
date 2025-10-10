@@ -1,13 +1,13 @@
 document.addEventListener('DOMContentLoaded', function () {
   const API_BASE_URL = 'http://localhost:3000';
-
+  fetchDashboardData();
   // Initialize views
   const views = {
     dashboard: document.getElementById('dashboard-view'),
     buses: document.getElementById('buses-view'),
     routes: document.getElementById('routes-view'),
     bookings: document.getElementById('bookings-view'),
-      settings: document.getElementById('settings-view')
+    settings: document.getElementById('settings-view')
   };
 
 
@@ -66,7 +66,7 @@ document.addEventListener('DOMContentLoaded', function () {
       views[currentView].classList.remove('active-view');
       views[viewName].classList.add('active-view');
       currentView = viewName;
-      
+
       fetchDataForView(viewName);
     });
   });
@@ -202,16 +202,22 @@ document.addEventListener('DOMContentLoaded', function () {
       .catch(error => console.error('Error fetching utilization chart data:', error));
   }
 
-  // --- Data Fetching Functions ---
+  // In script.js, replace the entire fetchDashboardData function with this corrected version:
   function fetchDashboardData() {
-    // FIXED: Dynamically fetch and set user name and role
-    fetch(`${API_BASE_URL}/staff/details/1`) // Assuming user ID 1 for now
-      .then(response => response.json())
-      .then(data => {
-        document.getElementById('user-name').textContent = data.name;
-        document.getElementById('user-role').textContent = data.role.charAt(0).toUpperCase() + data.role.slice(1);
-      }).catch(err => console.error('Error fetching user details:', err));
+    // FIX: Get the logged-in staff's ID from local storage.
+    const staffId = localStorage.getItem('staffId');
 
+    // Fetch and set the user name and role dynamically.
+    if (staffId) {
+      fetch(`${API_BASE_URL}/staff/details/${staffId}`) // Use the dynamic staffId here
+        .then(response => response.json())
+        .then(data => {
+          document.getElementById('user-name').textContent = data.name;
+          document.getElementById('user-role').textContent = data.role.charAt(0).toUpperCase() + data.role.slice(1);
+        }).catch(err => console.error('Error fetching user details:', err));
+    }
+
+    // The rest of the function remains the same.
     fetch(`${API_BASE_URL}/dashboard/summary`)
       .then(response => response.json())
       .then(data => {
@@ -463,7 +469,7 @@ document.addEventListener('DOMContentLoaded', function () {
   document.addEventListener('click', async (e) => {
     const target = e.target.closest('.action-btn');
     if (!target) return;
-    
+
     const row = target.closest('tr');
     if (!row) return; // Ensure the button is inside a table row
 
@@ -558,8 +564,8 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
-  
-  
+
+
   // --- Generic Update Handler ---
   async function handleFormUpdate(endpoint, id, refreshFn, e) {
     e.preventDefault();
@@ -584,61 +590,61 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
 
-    // ...existing code...
+  // ...existing code...
 
-// Get staffId from localStorage (set after login)
-const staffId = localStorage.getItem('staffId');
+  // Get staffId from localStorage (set after login)
+  const staffId = localStorage.getItem('staffId');
 
-// Protect dashboard: redirect to login if not logged in
-if (!staffId) {
-  window.location.href = 'login-pages/staff.html';
-}
-
-// Settings Info Form Submission
-document.getElementById('settings-info-form').addEventListener('submit', async function(e) {
-  e.preventDefault();
-  const data = {
-    name: document.getElementById('settings-name').value,
-    email: document.getElementById('settings-email').value,
-    phone: document.getElementById('settings-phone').value
-  };
-  try {
-    const res = await fetch(`${API_BASE_URL}/staff/${staffId}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
-    });
-    const result = await res.json();
-    if (!res.ok) throw new Error(result.error || 'Failed to update info');
-    showNotification('Information updated successfully!', 'success');
-  } catch (err) {
-    showNotification(err.message, 'error');
+  // Protect dashboard: redirect to login if not logged in
+  if (!staffId) {
+    window.location.href = 'login-pages/staff.html';
   }
-});
 
-// Settings Password Form Submission
-document.getElementById('settings-password-form').addEventListener('submit', async function(e) {
-  e.preventDefault();
-  const data = {
-    current_password: document.getElementById('settings-current-password').value,
-    new_password: document.getElementById('settings-new-password').value
-  };
-  try {
-    const res = await fetch(`${API_BASE_URL}/staff/${staffId}/password`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
-    });
-    const result = await res.json();
-    if (!res.ok) throw new Error(result.error || 'Failed to change password');
-    showNotification('Password changed successfully!', 'success');
-    document.getElementById('settings-password-form').reset();
-  } catch (err) {
-    showNotification(err.message, 'error');
-  }
-});
+  // Settings Info Form Submission
+  document.getElementById('settings-info-form').addEventListener('submit', async function (e) {
+    e.preventDefault();
+    const data = {
+      name: document.getElementById('settings-name').value,
+      email: document.getElementById('settings-email').value,
+      phone: document.getElementById('settings-phone').value
+    };
+    try {
+      const res = await fetch(`${API_BASE_URL}/staff/${staffId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || 'Failed to update info');
+      showNotification('Information updated successfully!', 'success');
+    } catch (err) {
+      showNotification(err.message, 'error');
+    }
+  });
 
-// ...existing code...
+  // Settings Password Form Submission
+  document.getElementById('settings-password-form').addEventListener('submit', async function (e) {
+    e.preventDefault();
+    const data = {
+      current_password: document.getElementById('settings-current-password').value,
+      new_password: document.getElementById('settings-new-password').value
+    };
+    try {
+      const res = await fetch(`${API_BASE_URL}/staff/${staffId}/password`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || 'Failed to change password');
+      showNotification('Password changed successfully!', 'success');
+      document.getElementById('settings-password-form').reset();
+    } catch (err) {
+      showNotification(err.message, 'error');
+    }
+  });
+
+  // ...existing code...
   // --- Booking Cancellation Handler ---
   async function cancelBooking(id) {
     try {
@@ -655,7 +661,7 @@ document.getElementById('settings-password-form').addEventListener('submit', asy
     }
   }
 
-  
+
   // Initialize dashboard data on first load
   fetchDashboardData();
 });
