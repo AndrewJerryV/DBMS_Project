@@ -558,5 +558,26 @@ app.get('/query', (req, res) => {
     res.json(results);
   });
 });
+  // ...existing code...
+// ...existing code...
+// Update staff info
+app.put('/staff/:id', (req, res) => {
+  const { id } = req.params;
+  const { name, email, phone } = req.body;
+  db.query(
+    'UPDATE staff SET name = ?, email = ?, phone = ? WHERE id = ?',
+    [name, email, phone, id],
+    (err, result) => {
+      if (err) {
+        console.error(err);
+        return res.status(500).json({ error: 'Database error' });
+      }
+      if (result.affectedRows === 0) {
+        return res.status(404).json({ error: 'Staff not found' });
+      }
+      res.json({ message: 'Information updated successfully' });
+    }
+  );
+});
 
 app.listen(3000, () => console.log('Server running on http://localhost:3000'));

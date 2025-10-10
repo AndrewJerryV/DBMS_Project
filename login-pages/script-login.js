@@ -27,7 +27,7 @@ document.addEventListener("DOMContentLoaded", () => {
       });
 
       const data = await response.json();
-
+      console.log("Response Data:", data); 
       if (response.ok) {
         // FIXED: Store token and user data in local storage
         localStorage.setItem('authToken', data.token);
