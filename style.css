@@ -111,12 +111,15 @@ body {
 .profile-menu {
   display: none;
   position: absolute;
-  top: 100%;
+  top: calc(100% + 24px);
   right: 0;
   background-color: var(--card-bg);
+  border-radius: 30px;
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   z-index: 110;
+  transform: translateY(-10px);
+  transition: 300ms;
   width: 200px;
   padding: 10px 0;
 }
@@ -127,14 +130,19 @@ body {
 
 .profile-menu ul {
   list-style: none;
-  padding: 0;
-  margin: 0;
+  padding: 10;
+  flex-direction: column;
 }
 
 .profile-menu li {
   padding: 10px 20px;
   font-size: 0.9rem;
   color: var(--text-dark);
+}
+
+.profile-menu ul li:hover {
+    background: var(--gray);
+    color: white;
 }
 
 .theme-switcher {
