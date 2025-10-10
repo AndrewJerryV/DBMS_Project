@@ -1,44 +1,46 @@
-// script-login.js
-
 document.addEventListener("DOMContentLoaded", () => {
   const form = document.querySelector("form");
+  const errorMessageDiv = document.getElementById("error-message");
+
+  // If already logged in, redirect to dashboard
+  if (localStorage.getItem('authToken')) {
+      window.location.href = "index.html";
+  }
 
   form.addEventListener("submit", async (e) => {
-    e.preventDefault(); // Prevent page reload
+    e.preventDefault();
 
-    // Collect input values
     const email = form.querySelector('input[type="email"]').value.trim();
     const password = form.querySelector('input[type="password"]').value;
+    errorMessageDiv.textContent = ''; // Clear previous errors
 
     if (!email || !password) {
-      alert("Please fill all fields!");
+      errorMessageDiv.textContent = "Please fill in all fields!";
       return;
     }
 
     try {
-      // Send POST request to staff login endpoint
       const response = await fetch("http://localhost:3000/staff/login", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password })
       });
 
       const data = await response.json();
 
       if (response.ok) {
-        // Login successful
-        alert(`Welcome, ${data.name}! Role: ${data.role}`);
-        // Redirect to staff dashboard or another page
-        window.location.href = "/staff-dashboard.html";
+        // FIXED: Store token and user data in local storage
+        localStorage.setItem('authToken', data.token);
+        localStorage.setItem('staffDetails', JSON.stringify(data.staff));
+        
+        // FIXED: Redirect to the main dashboard (index.html)
+        window.location.href = "index.html"; 
       } else {
-        // Login failed
-        alert(data.error || "Login failed");
+        errorMessageDiv.textContent = data.error || "Login failed. Please try again.";
       }
     } catch (err) {
       console.error(err);
-      alert("Server error. Please try again later.");
+      errorMessageDiv.textContent = "Server error. Please try again later.";
     }
   });
 });

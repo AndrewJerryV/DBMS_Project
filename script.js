@@ -22,16 +22,16 @@ document.addEventListener('DOMContentLoaded', function () {
     localStorage.setItem('theme', body.classList.contains('dark-theme') ? 'dark' : 'light');
   });
 
-  // On load, apply saved theme
   const savedTheme = localStorage.getItem('theme');
   if (savedTheme === 'dark') {
     body.classList.add('dark-theme');
     themeToggle.checked = true;
   }
 
-  // Profile menu logic
+  // --- Profile menu logic ---
   const profileInfo = document.querySelector('.profile-info');
   const profileMenu = document.querySelector('.profile-menu');
+  const logoutButton = document.getElementById('logout-button');
 
   profileInfo.addEventListener('click', (e) => {
     e.stopPropagation();
@@ -42,6 +42,13 @@ document.addEventListener('DOMContentLoaded', function () {
     if (profileMenu.classList.contains('active')) {
       profileMenu.classList.remove('active');
     }
+  });
+
+  // FIXED: Added logout functionality
+  logoutButton.addEventListener('click', () => {
+    localStorage.clear(); // Clear theme and any other stored data
+    // In a real app, you would also call a /logout endpoint on the server
+    window.location.reload(); // For demonstration, just reload the page
   });
 
 
@@ -57,8 +64,7 @@ document.addEventListener('DOMContentLoaded', function () {
       views[currentView].classList.remove('active-view');
       views[viewName].classList.add('active-view');
       currentView = viewName;
-
-      // Fetch data for the newly activated view
+      
       fetchDataForView(viewName);
     });
   });
@@ -118,7 +124,7 @@ document.addEventListener('DOMContentLoaded', function () {
       const response = await fetch(`${API_BASE_URL}${url}`);
       const data = await response.json();
       const select = document.getElementById(selectId);
-      select.innerHTML = '<option value="">-- Please Select --</option>'; // Default empty option
+      select.innerHTML = '<option value="">-- Please Select --</option>';
       data.forEach(item => {
         const option = document.createElement('option');
         option.value = item[valueField];
@@ -133,26 +139,23 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // --- Chart Rendering ---
   let bookingsChartInstance = null,
-    utilizationChartInstance = null; // Store chart instances globally
+    utilizationChartInstance = null;
 
   function renderBookingsChart() {
-    // Fetch data from the new backend endpoint
     fetch(`${API_BASE_URL}/dashboard/bookings-by-day`)
       .then(response => response.json())
       .then(chartData => {
         const ctx = document.getElementById('bookingsChart').getContext('2d');
-
         if (bookingsChartInstance) {
           bookingsChartInstance.destroy();
         }
-
         bookingsChartInstance = new Chart(ctx, {
           type: 'bar',
           data: {
-            labels: chartData.labels, // Use labels from API
+            labels: chartData.labels,
             datasets: [{
               label: 'Bookings',
-              data: chartData.data, // Use data from API
+              data: chartData.data,
               backgroundColor: 'rgba(240, 101, 43, 0.2)',
               borderColor: 'rgba(240, 101, 43, 1)',
               borderWidth: 1
@@ -162,12 +165,7 @@ document.addEventListener('DOMContentLoaded', function () {
             responsive: true,
             maintainAspectRatio: false,
             scales: {
-              y: {
-                beginAtZero: true,
-                ticks: {
-                  stepSize: 1 // Ensure y-axis shows whole numbers for counts
-                }
-              }
+              y: { beginAtZero: true, ticks: { stepSize: 1 } }
             }
           }
         });
@@ -176,39 +174,27 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   function renderUtilizationChart() {
-    // Fetch data from the new backend endpoint
     fetch(`${API_BASE_URL}/dashboard/bus-utilization`)
       .then(response => response.json())
       .then(utilizationData => {
         const ctx = document.getElementById('utilizationChart').getContext('2d');
-
-        // Transform the fetched data into the format Chart.js needs
-        const labels = utilizationData.map(item => item.status.charAt(0).toUpperCase() + item.status.slice(1)); // Capitalize status
+        const labels = utilizationData.map(item => item.status.charAt(0).toUpperCase() + item.status.slice(1));
         const data = utilizationData.map(item => item.count);
-
         if (utilizationChartInstance) {
           utilizationChartInstance.destroy();
         }
-
         utilizationChartInstance = new Chart(ctx, {
           type: 'doughnut',
           data: {
-            labels: labels, // Use labels from API
+            labels: labels,
             datasets: [{
               label: 'Bus Utilization',
-              data: data, // Use data from API
-              backgroundColor: [
-                'rgba(46, 204, 113, 0.7)', // Color for 'Active'
-                'rgba(241, 196, 15, 0.7)', // Color for 'Maintenance'
-                'rgba(231, 76, 60, 0.7)' // A third color if other statuses exist
-              ],
+              data: data,
+              backgroundColor: ['rgba(46, 204, 113, 0.7)', 'rgba(241, 196, 15, 0.7)', 'rgba(231, 76, 60, 0.7)'],
               hoverOffset: 4
             }]
           },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-          }
+          options: { responsive: true, maintainAspectRatio: false }
         });
       })
       .catch(error => console.error('Error fetching utilization chart data:', error));
@@ -216,13 +202,13 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // --- Data Fetching Functions ---
   function fetchDashboardData() {
-    // Fetch user role
+    // FIXED: Dynamically fetch and set user name and role
     fetch(`${API_BASE_URL}/staff/details/1`) // Assuming user ID 1 for now
       .then(response => response.json())
       .then(data => {
+        document.getElementById('user-name').textContent = data.name;
         document.getElementById('user-role').textContent = data.role.charAt(0).toUpperCase() + data.role.slice(1);
-      }).catch(err => console.error('Error fetching user role:', err));
-
+      }).catch(err => console.error('Error fetching user details:', err));
 
     fetch(`${API_BASE_URL}/dashboard/summary`)
       .then(response => response.json())
@@ -395,54 +381,42 @@ document.addEventListener('DOMContentLoaded', function () {
     try {
       const response = await fetch(`${API_BASE_URL}/${endpoint}`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       });
       const result = await response.json();
       if (!response.ok) {
         throw new Error(result.error || `Failed to add item to ${endpoint}`);
       }
-
       showNotification(result.message, 'success');
       closeModal();
-      refreshFunction(); // Refresh the table
-      fetchDashboardData(); // Also refresh dashboard stats
+      refreshFunction();
+      fetchDashboardData();
     } catch (error) {
       console.error(`Error adding to ${endpoint}:`, error);
       showNotification(error.message, 'error');
     }
   }
 
+  // FIXED: Refactored to use CSS classes from style.css instead of injecting styles
   function showConfirmation(message) {
     return new Promise((resolve) => {
       const container = document.createElement('div');
       container.className = 'confirm-dialog';
       container.innerHTML = `
-            <div class="confirm-content">
-                <p>${message}</p>
-                <div class="confirm-buttons">
-                    <button class="confirm-yes">Yes</button>
-                    <button class="confirm-no">No</button>
-                </div>
-            </div>`;
-      const style = document.createElement('style');
-      style.innerHTML = `
-            .confirm-dialog { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 2000; display: flex; align-items: center; justify-content: center; animation: fadeIn 0.2s; }
-            .confirm-content { background: var(--card-bg); color: var(--text-dark); padding: 25px 35px; border-radius: 8px; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.3); animation: slideIn 0.2s; }
-            .confirm-content p { margin: 0 0 20px; font-size: 1.1em; }
-            .confirm-buttons button { padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; margin: 0 10px; font-weight: bold; transition: transform 0.1s; }
-            .confirm-buttons button:hover { transform: scale(1.05); }
-            .confirm-yes { background-color: #d63323; color: white; }
-            .confirm-no { background-color: #ccc; }`;
-      document.head.appendChild(style);
+        <div class="confirm-content">
+          <p>${message}</p>
+          <div class="confirm-buttons">
+            <button class="confirm-yes">Yes</button>
+            <button class="confirm-no">No</button>
+          </div>
+        </div>`;
       document.body.appendChild(container);
 
       const cleanup = () => {
         document.body.removeChild(container);
-        document.head.removeChild(style);
       };
+
       container.querySelector('.confirm-yes').onclick = () => {
         cleanup();
         resolve(true);
@@ -453,19 +427,16 @@ document.addEventListener('DOMContentLoaded', function () {
       };
     });
   }
+
   async function deleteWithForce(endpoint, id, refreshFn) {
     try {
-      const res = await fetch(`${API_BASE_URL}/${endpoint}/${id}`, {
-        method: 'DELETE'
-      });
-      const result = await res.json();
+      let res = await fetch(`${API_BASE_URL}/${endpoint}/${id}`, { method: 'DELETE' });
+      let result = await res.json();
 
       if (res.status === 409) { // Conflict detected
         const userConfirmed = await showConfirmation(result.error + '. Do you want to delete it anyway? This will also delete associated bookings and schedules.');
         if (userConfirmed) {
-          const forceRes = await fetch(`${API_BASE_URL}/${endpoint}/${id}?force=true`, {
-            method: 'DELETE'
-          });
+          const forceRes = await fetch(`${API_BASE_URL}/${endpoint}/${id}?force=true`, { method: 'DELETE' });
           const forceResult = await forceRes.json();
           if (!forceRes.ok) throw new Error(forceResult.error || `Failed to force delete ${endpoint}.`);
           showNotification(forceResult.message, 'success');
@@ -486,11 +457,14 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
-  // A single, correct event listener for all actions.
+  // Event delegation for action buttons
   document.addEventListener('click', async (e) => {
     const target = e.target.closest('.action-btn');
     if (!target) return;
+    
     const row = target.closest('tr');
+    if (!row) return; // Ensure the button is inside a table row
+
     const id = row.dataset.id;
     const view = target.closest('.view').id;
 
@@ -511,12 +485,10 @@ document.addEventListener('DOMContentLoaded', function () {
       if (await showConfirmation('Are you sure you want to cancel this booking?')) {
         await cancelBooking(id);
       }
-    } else if (target.classList.contains('view')) {
-      // Add view logic if needed
     }
   });
 
-  // --- New Edit Functions ---
+  // --- Edit Functions ---
   async function openBusModalForEdit(id) {
     try {
       const res = await fetch(`${API_BASE_URL}/buses/details/${id}`);
@@ -525,13 +497,13 @@ document.addEventListener('DOMContentLoaded', function () {
 
       modalTitle.textContent = 'Edit Bus';
       modalForm.innerHTML = `
-            <label for="bus_number">Bus Number:</label><input type="text" id="bus_number" name="bus_number" value="${bus.bus_number}" required>
-            <label for="capacity">Capacity:</label><input type="number" id="capacity" name="capacity" value="${bus.capacity}" required>
-            <label for="driver_id">Driver:</label><select id="driver_id" name="driver_id"></select>
-            <label for="bus_stop_id">Home Bus Stop:</label><select id="bus_stop_id" name="bus_stop_id"></select>
-            <label for="status">Status:</label><select id="status" name="status"></select>
-            <label for="bus_type">Bus Type:</label><select id="bus_type" name="bus_type"></select>
-            <button type="submit">Update Bus</button>`;
+        <label for="bus_number">Bus Number:</label><input type="text" id="bus_number" name="bus_number" value="${bus.bus_number}" required>
+        <label for="capacity">Capacity:</label><input type="number" id="capacity" name="capacity" value="${bus.capacity}" required>
+        <label for="driver_id">Driver:</label><select id="driver_id" name="driver_id"></select>
+        <label for="bus_stop_id">Home Bus Stop:</label><select id="bus_stop_id" name="bus_stop_id"></select>
+        <label for="status">Status:</label><select id="status" name="status"></select>
+        <label for="bus_type">Bus Type:</label><select id="bus_type" name="bus_type"></select>
+        <button type="submit">Update Bus</button>`;
 
       await Promise.all([
         populateSelect('driver_id', '/drivers/list', 'id', 'name'),
@@ -561,12 +533,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
       modalTitle.textContent = 'Edit Route';
       modalForm.innerHTML = `
-            <label for="origin_bus_stop_id">Origin:</label><select id="origin_bus_stop_id" name="origin_bus_stop_id" required></select>
-            <label for="destination_bus_stop_id">Destination:</label><select id="destination_bus_stop_id" name="destination_bus_stop_id" required></select>
-            <label for="distance_km">Distance (km):</label><input type="number" step="0.1" id="distance_km" name="distance_km" value="${route.distance_km}" required>
-            <label for="duration_min">Duration (minutes):</label><input type="number" id="duration_min" name="duration_min" value="${route.duration_min}" required>
-            <label for="fare">Fare (₹):</label><input type="number" step="0.01" id="fare" name="fare" value="${route.fare}" required>
-            <button type="submit">Update Route</button>`;
+        <label for="origin_bus_stop_id">Origin:</label><select id="origin_bus_stop_id" name="origin_bus_stop_id" required></select>
+        <label for="destination_bus_stop_id">Destination:</label><select id="destination_bus_stop_id" name="destination_bus_stop_id" required></select>
+        <label for="distance_km">Distance (km):</label><input type="number" step="0.1" id="distance_km" name="distance_km" value="${route.distance_km}" required>
+        <label for="duration_min">Duration (minutes):</label><input type="number" id="duration_min" name="duration_min" value="${route.duration_min}" required>
+        <label for="fare">Fare (₹):</label><input type="number" step="0.01" id="fare" name="fare" value="${route.fare}" required>
+        <button type="submit">Update Route</button>`;
 
       await Promise.all([
         populateSelect('origin_bus_stop_id', '/bus_stops/list', 'id', 'name'),
@@ -588,13 +560,10 @@ document.addEventListener('DOMContentLoaded', function () {
   async function handleFormUpdate(endpoint, id, refreshFn, e) {
     e.preventDefault();
     const data = Object.fromEntries(new FormData(modalForm).entries());
-
     try {
       const res = await fetch(`${API_BASE_URL}/${endpoint}/${id}`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       });
       const result = await res.json();
@@ -613,9 +582,7 @@ document.addEventListener('DOMContentLoaded', function () {
   // --- Booking Cancellation Handler ---
   async function cancelBooking(id) {
     try {
-      const res = await fetch(`${API_BASE_URL}/bookings/${id}/cancel`, {
-        method: 'PUT'
-      });
+      const res = await fetch(`${API_BASE_URL}/bookings/${id}/cancel`, { method: 'PUT' });
       const result = await res.json();
       if (!res.ok) throw new Error(result.error || 'Failed to cancel booking.');
 

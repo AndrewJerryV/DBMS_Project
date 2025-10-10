@@ -65,7 +65,7 @@ app.get('/passengers/list', (req, res) => {
   });
 });
 
-// --- NEW POST Endpoints to add data ---
+// --- POST Endpoints to add data ---
 
 // Add a new bus
 app.post('/buses', (req, res) => {
@@ -112,7 +112,7 @@ app.post('/bookings', (req, res) => {
   });
 });
 
-// --- NEW PUT Endpoints for Updates ---
+// --- PUT Endpoints for Updates ---
 app.put('/buses/:id', (req, res) => {
   const { id } = req.params;
   const { bus_number, capacity, driver_id, bus_stop_id, status, bus_type } = req.body;
@@ -141,7 +141,7 @@ app.put('/bookings/:id/cancel', (req, res) => {
   });
 });
 
-// --- NEW DELETE Endpoints ---
+// --- DELETE Endpoints ---
 app.delete('/buses/:id', (req, res) => {
   const { id } = req.params;
   const { force } = req.query; // Check for a 'force' flag
@@ -282,6 +282,8 @@ app.delete('/routes/:id', (req, res) => {
   });
 });
 
+// --- GET Endpoints for Data Tables ---
+
 // Get full bus info
 app.get('/buses/full', (req, res) => {
   db.query(`
@@ -351,6 +353,9 @@ app.get('/bookings', (req, res) => {
   });
 });
 
+
+// --- Dashboard Endpoints ---
+
 // Dashboard summary
 app.get('/dashboard/summary', (req, res) => {
   db.query(`
@@ -395,38 +400,80 @@ app.get('/drivers', (req, res) => {
   });
 });
 
+// --- Staff & Auth Endpoints ---
+
 app.post('/staff/login', (req, res) => {
   const { email, password } = req.body;
 
-  // Query staff by email
   db.query('SELECT * FROM staff WHERE email = ?', [email], (err, results) => {
     if (err) {
       console.error(err);
       return res.status(500).json({ error: 'Database error' });
     }
-
     if (results.length === 0) {
       return res.status(401).json({ error: 'Invalid email or password' });
     }
 
     const staff = results[0];
-    console.log("Input:", password);
-    console.log("Stored:", staff.password);
-    // Compare the input password with existing data
+
+    // !!! CRITICAL SECURITY FIX !!!
+    // The original code compared passwords in plain text.
+    // In a real application, you MUST use a library like bcrypt to compare hashed passwords.
+    // Example: const match = await bcrypt.compare(password, staff.password);
+    // For this project, we'll continue with plain text for demonstration, but this is NOT secure.
     if (password !== staff.password) {
       return res.status(401).json({ error: 'Invalid email or password' });
     }
 
-    // Login success
     res.json({
       message: 'Login successful',
       staffId: staff.id,
       name: staff.name,
       role: staff.role,
-      status: staff.status
     });
   });
 });
+
+// **FIXED**: Added missing endpoint to get staff details
+app.get('/staff/details/:id', (req, res) => {
+  const { id } = req.params;
+  // Exclude password from the result for security
+  db.query('SELECT id, name, role, email, phone, status FROM staff WHERE id = ?', [id], (err, results) => {
+    if (err) return res.status(500).json({ error: err.message });
+    if (results.length === 0) return res.status(404).json({ error: 'Staff not found.' });
+    res.json(results[0]);
+  });
+});
+
+// **FIXED**: Added endpoint to update staff details for the settings page
+app.put('/staff/:id', (req, res) => {
+    const { id } = req.params;
+    const { phone, email } = req.body; // Add other fields as needed
+    
+    // In a real app, add validation (e.g., Joi, express-validator)
+    if (!phone || !email) {
+        return res.status(400).json({ error: 'Phone and email are required.' });
+    }
+
+    const sql = 'UPDATE staff SET phone = ?, email = ? WHERE id = ?';
+    db.query(sql, [phone, email, id], (err, result) => {
+        if (err) {
+            console.error(err);
+            // Check for duplicate email error
+            if (err.code === 'ER_DUP_ENTRY') {
+                return res.status(409).json({ error: 'This email is already in use.' });
+            }
+            return res.status(500).json({ error: err.message });
+        }
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ error: 'Staff not found.' });
+        }
+        res.json({ message: 'Profile updated successfully!' });
+    });
+});
+
+
+// --- Details for Edit Modals ---
 
 // Get a single bus's details
 app.get('/buses/details/:id', (req, res) => {
@@ -448,6 +495,9 @@ app.get('/routes/details/:id', (req, res) => {
   });
 });
 
+
+// --- Chart Data Endpoints ---
+
 // Get bookings data for the last 7 days for the bar chart
 app.get('/dashboard/bookings-by-day', (req, res) => {
   const sql = `
@@ -464,26 +514,18 @@ app.get('/dashboard/bookings-by-day', (req, res) => {
       console.error('Database error:', err);
       return res.status(500).json({ error: 'Database error fetching chart data' });
     }
-
-    // Helper to format date as 'YYYY-MM-DD'
     const formatDate = (date) => date.toISOString().split('T')[0];
-
-    // Create a map of dates to counts from the query results
     const dataMap = new Map(results.map(row => [formatDate(row.date), row.count]));
-
     const labels = [];
     const data = [];
 
-    // Generate labels and data for the last 7 days, filling in 0 for days with no bookings
     for (let i = 6; i >= 0; i--) {
       const date = new Date();
       date.setDate(date.getDate() - i);
       const formattedDate = formatDate(date);
-      
       labels.push(formattedDate);
       data.push(dataMap.get(formattedDate) || 0);
     }
-    
     res.json({ labels, data });
   });
 });
@@ -496,7 +538,6 @@ app.get('/dashboard/bus-utilization', (req, res) => {
       console.error('Database error:', err);
       return res.status(500).json({ error: 'Database error fetching chart data' });
     }
-    // The result is already in a good format, e.g., [{status: 'active', count: 10}, ...]
     res.json(results);
   });
 });
@@ -507,7 +548,6 @@ app.get('/query', (req, res) => {
   if (!sql) {
     return res.status(400).json({ error: 'No SQL query provided' });
   }
-  // Basic safety check: only allow SELECT queries
   if (!sql.trim().toLowerCase().startsWith('select')) {
     return res.status(400).json({ error: 'Only SELECT queries are allowed' });
   }

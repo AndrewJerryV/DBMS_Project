@@ -63,6 +63,11 @@ body {
   color: var(--text-dark);
 }
 
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
 .sidebar-logo {
   width: 50px;
   height: 50px;
@@ -87,13 +92,13 @@ body {
 
 .profile-icon {
   font-size: 2.5rem;
-  color: #3498db;
+  color: var(--primary);
 }
 
 .profile-details {
   display: flex;
   flex-direction: column;
-  text-align: right;
+  align-items: flex-end;
 }
 
 .profile-name {
@@ -111,43 +116,55 @@ body {
 .profile-menu {
   display: none;
   position: absolute;
-  top: calc(100% + 24px);
+  top: calc(100% + 15px);
   right: 0;
   background-color: var(--card-bg);
-  border-radius: 30px;
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   z-index: 110;
-  transform: translateY(-10px);
-  transition: 300ms;
-  width: 200px;
+  width: 220px;
   padding: 10px 0;
+  opacity: 0;
+  transform: translateY(-10px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
 }
 
 .profile-menu.active {
   display: block;
+  opacity: 1;
+  transform: translateY(0);
 }
 
 .profile-menu ul {
   list-style: none;
-  padding: 10;
-  flex-direction: column;
+  padding: 0;
+  margin: 0;
 }
 
 .profile-menu li {
   padding: 10px 20px;
   font-size: 0.9rem;
   color: var(--text-dark);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  transition: background-color 0.2s;
 }
 
-.profile-menu ul li:hover {
-    background: var(--gray);
-    color: white;
+.profile-menu li:hover {
+    background: var(--hover-bg);
+}
+
+.profile-menu li a {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
 }
 
 .theme-switcher {
-  display: flex;
-  align-items: center;
+  justify-content: space-between;
 }
 
 /* Theme Toggle Switch */
@@ -271,13 +288,14 @@ input:checked+.slider:before {
   background: var(--card-bg);
   border-radius: 10px;
   padding: 25px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
   text-align: center;
   transition: transform 0.3s, box-shadow 0.3s;
 }
 
 .card:hover {
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+  transform: translateY(-5px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
 }
 
 .card h3 {
@@ -304,7 +322,7 @@ input:checked+.slider:before {
   background: var(--card-bg);
   border-radius: 10px;
   padding: 25px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
 }
 
 .table-header {
@@ -387,6 +405,7 @@ tbody tr:hover {
   font-size: 14px;
   font-weight: 600;
   display: inline-block;
+  text-transform: capitalize;
 }
 
 .status.active {
@@ -399,7 +418,7 @@ tbody tr:hover {
   color: var(--status-maintenance-text);
 }
 
-.status.confirmed {
+.status.confirmed, .status.pending, .status.completed {
   background-color: var(--status-confirmed);
   color: var(--status-confirmed-text);
 }
@@ -424,26 +443,10 @@ tbody tr:hover {
   transform: scale(1.1);
 }
 
-.action-btn.edit {
-  color: #1976d2;
-}
-
-.action-btn.delete {
-  color: #d32f2f;
-}
-
-.action-btn.view {
-  color: #388e3c;
-}
-
-.action-btn.cancel {
-  color: #f57c00;
-}
-
-/* Primary color for active elements */
-.sidebar h2 i {
-  color: var(--primary);
-}
+.action-btn.edit { color: #1976d2; }
+.action-btn.delete { color: #d32f2f; }
+.action-btn.view { color: #388e3c; }
+.action-btn.cancel { color: #f57c00; }
 
 /* Charts Section */
 .charts-section {
@@ -457,7 +460,7 @@ tbody tr:hover {
   background: var(--card-bg);
   border-radius: 12px;
   padding: 20px;
-  box-shadow: var(--card-shadow);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
 }
 
 .chart-header {
@@ -479,26 +482,184 @@ tbody tr:hover {
 
 .chart-actions button {
   background: none;
-  border: 1px solid var(--gray);
+  border: 1px solid var(--input-border);
   padding: 5px 10px;
   border-radius: 4px;
   cursor: pointer;
   font-size: 0.85rem;
   color: var(--text-light);
-  transition: background-color 0.3s;
+  transition: background-color 0.3s, color 0.3s;
 }
 
 .chart-actions button:hover {
-  background: var(--hover-bg);
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
 }
 
-#bookingsChart {
+#bookingsChart, #utilizationChart {
   width: 100% !important;
   height: 400px !important;
 }
 
-#utilizationChart {
-  width: 100% !important;
-  height: 400px !important;
+/* FIXED: Moved Modal styles from index.html to style.css */
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background-color: rgba(0, 0, 0, 0.6);
+  animation: fadeIn 0.3s;
 }
 
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+.modal-content {
+  background-color: var(--modal-content-bg);
+  margin: 10% auto;
+  padding: 25px 30px;
+  border: none;
+  width: 90%;
+  max-width: 500px;
+  border-radius: 8px;
+  position: relative;
+  animation: slideInModal 0.3s;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+}
+
+@keyframes slideInModal { from { transform: translateY(-50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+.close-button {
+  color: #aaa;
+  float: right;
+  font-size: 28px;
+  font-weight: bold;
+}
+
+.close-button:hover, .close-button:focus {
+  color: var(--text-dark);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+#modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin-top: 20px;
+}
+
+#modal-form label {
+  font-weight: bold;
+  font-size: 0.9em;
+}
+
+#modal-form input, #modal-form select {
+  padding: 10px;
+  border-radius: 5px;
+  border: 1px solid var(--input-border);
+  font-size: 1em;
+  background-color: var(--body-bg);
+  color: var(--text-dark);
+  width: 100%;
+}
+
+#modal-form button {
+  padding: 12px 20px;
+  background-color: var(--primary);
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  align-self: flex-end;
+  font-weight: bold;
+  transition: background-color 0.2s;
+}
+
+#modal-form button:hover {
+  background-color: var(--primary-dark);
+}
+
+/* FIXED: Moved Notification styles from index.html to style.css */
+.notification {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #333;
+  color: white;
+  padding: 15px 25px;
+  border-radius: 8px;
+  z-index: 1001;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.5s, visibility 0.5s, transform 0.5s;
+  transform: translate(-50%, 20px);
+}
+
+.notification.show {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%);
+}
+
+.notification.error { background-color: #f44336; }
+.notification.success { background-color: #4CAF50; }
+
+/* FIXED: Added styles for confirmation dialog, moved from script.js */
+.confirm-dialog {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.6);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.2s;
+}
+
+.confirm-content {
+  background: var(--card-bg);
+  color: var(--text-dark);
+  padding: 25px 35px;
+  border-radius: 8px;
+  text-align: center;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+  animation: slideInModal 0.2s;
+}
+
+.confirm-content p {
+  margin: 0 0 20px;
+  font-size: 1.1em;
+}
+
+.confirm-buttons button {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  margin: 0 10px;
+  font-weight: bold;
+  transition: transform 0.1s;
+}
+
+.confirm-buttons button:hover {
+  transform: scale(1.05);
+}
+
+.confirm-yes {
+  background-color: #d63323;
+  color: white;
+}
+
+.confirm-no {
+  background-color: #ccc;
+  color: #333;
+}
