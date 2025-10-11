@@ -523,12 +523,25 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 
-  ['bus-search', 'route-search', 'booking-search'].forEach(id => {
-      document.getElementById(id).addEventListener('input', (e) => {
-          const tableId = id.replace('-search', '-management-table');
-          filterTable(`#${tableId} tbody`, e.target.value);
+  // --- FIX STARTS HERE ---
+  // The original code had a typo that generated incorrect table IDs.
+  // This new approach explicitly maps search inputs to the correct table IDs, making it robust.
+  const searchMap = {
+    'bus-search': 'buses-management-table',
+    'route-search': 'routes-management-table',
+    'booking-search': 'bookings-management-table'
+  };
+
+  Object.keys(searchMap).forEach(inputId => {
+    const inputElement = document.getElementById(inputId);
+    if (inputElement) {
+      inputElement.addEventListener('input', (e) => {
+        const tableId = searchMap[inputId];
+        filterTable(`#${tableId} tbody`, e.target.value);
       });
+    }
   });
+  // --- FIX ENDS HERE ---
 
   function debounce(func, delay) {
       let timeout;
