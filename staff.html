@@ -104,7 +104,8 @@
       font-size: 16px;
       font-weight: bold;
       cursor: pointer;
-      margin-top: 10px;
+      margin-top: 28px;
+      margin-bottom: -12px;
       transition: background 0.3s;
     }
 
@@ -134,6 +135,25 @@
       outline: none;
       resize: none;
     }
+
+    .password-container {
+    position: relative;
+    }
+
+    .password-container input {
+        width: 100%;
+        padding: 11px 10px 10px;
+        font-size: 16px;
+    }
+
+    .password-container i {
+      position: absolute;
+      right: -6px;
+      top: 50%;
+      transform: translateY(-50%);
+      cursor: pointer;
+      color: #555;
+    }
   </style>
 </head>
 
@@ -158,8 +178,11 @@
 
         <div class="form-group">
           <label>Password</label>
-          <input type="password" placeholder="Enter your password" required>
-        </div>
+
+          <div class="password-container">
+              <input type="password" id="login-password" placeholder="Enter your password" required>
+              <i class="fa-solid fa-eye-slash" id="togglePassword"></i>
+          </div>
 
         <button type="submit" class="btn">Login</button>
       </form>
@@ -176,7 +199,8 @@
         e.preventDefault();
 
         const email = form.querySelector('input[type="email"]').value.trim();
-        const password = form.querySelector('input[type="password"]').value;
+        const password = document.getElementById('login-password').value;
+
         errorMessageDiv.textContent = ''; // Clear previous errors
 
         if (!email || !password) {
@@ -215,6 +239,19 @@
           errorMessageDiv.textContent = "Server error. Please try again later.";
         }
       });
+
+      const togglePassword = document.getElementById('togglePassword');
+      const passwordInput = document.getElementById('login-password');
+
+      togglePassword.addEventListener('click', () => {
+      const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+      passwordInput.setAttribute('type', type);
+
+      // Toggle eye / eye-slash icon
+        togglePassword.classList.toggle('fa-eye');
+        togglePassword.classList.toggle('fa-eye-slash');
+      });
+
     });
   </script>
 </body>
