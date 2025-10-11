@@ -9,7 +9,7 @@
   --text-dark: #2c3e50;
   --text-light: #7f8c8d;
   --gray: #6c757d;
-  --hover-bg: #34495e;
+  --hover-bg: #f1f5f9; 
   --table-header-bg: #f8f9fa;
   --table-row-hover: #f8f9fa;
   --status-confirmed: #e3f2fd;
@@ -167,6 +167,12 @@ a {
   justify-content: space-between;
 }
 
+.theme-switcher-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 /* Theme Toggle Switch */
 .switch {
   position: relative;
@@ -255,8 +261,9 @@ input:checked+.slider:before {
   transition: background 0.3s;
 }
 
+/* --- THIS RULE IS CORRECTED --- */
 .sidebar li:hover {
-  background-color: var(--hover-bg);
+  background-color: #34495e; /* Use a dark color for contrast, not var(--hover-bg) */
 }
 
 .sidebar li.active {
@@ -392,12 +399,26 @@ tbody tr:hover {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 30px;
+  gap: 20px; /* Added for spacing */
 }
 
 .view-header h1 {
   margin-bottom: 0;
+  flex-shrink: 0; /* Prevent title from shrinking */
 }
 
+/* ADDED: Styles for the search input in views */
+.view-search {
+  width: 100%;
+  max-width: 350px;
+  padding: 10px 15px;
+  border-radius: 5px;
+  border: 1px solid var(--input-border);
+  background-color: var(--body-bg);
+  color: var(--text-dark);
+  font-size: 0.95rem;
+  margin-right: auto; /* Pushes the 'Add' button to the far right */
+}
 /* Status Indicators */
 .status {
   padding: 5px 10px;
@@ -662,4 +683,83 @@ tbody tr:hover {
 .confirm-no {
   background-color: #ccc;
   color: #333;
+}
+
+/* ADDED: Styles for the new booking modal flow */
+#find-trips-btn {
+    width: 100%;
+    margin-top: 10px;
+    padding: 12px 20px;
+    background-color: var(--primary);
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background-color 0.2s;
+}
+
+#find-trips-btn:hover {
+    background-color: var(--primary-dark);
+}
+
+#trip-results-container {
+  margin-top: 20px;
+  border-top: 1px solid var(--input-border);
+  padding-top: 15px;
+}
+
+.trip-option {
+  background-color: var(--body-bg);
+  border: 1px solid var(--input-border);
+  padding: 15px;
+  margin-bottom: 10px;
+  border-radius: 5px;
+}
+
+.trip-option p {
+  margin: 0 0 8px;
+  font-size: 0.95rem;
+}
+
+.trip-option p strong {
+  color: var(--text-dark);
+}
+
+.booking-action-area {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-top: 10px;
+  flex-wrap: wrap; /* Allows items to wrap on smaller screens */
+}
+
+.trip-option .seat-number-input,
+.trip-option .payment-method-select {
+  padding: 8px;
+  border-radius: 5px;
+  border: 1px solid var(--input-border);
+  font-size: 0.9em;
+  background-color: var(--body-bg);
+  color: var(--text-dark);
+  flex: 1; /* Allows fields to grow and fill space */
+  min-width: 100px;
+}
+
+.trip-option .book-trip-btn {
+  padding: 8px 15px;
+  background-color: var(--status-active);
+  color: var(--status-active-text);
+  border: 1px solid var(--status-active-text);
+  border-radius: 5px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: all 0.2s;
+  flex-shrink: 0; /* Prevents button from shrinking */
+}
+
+.trip-option .book-trip-btn:hover {
+  background-color: var(--status-active-text);
+  color: var(--status-active);
+  transform: scale(1.05);
 }
