@@ -14,6 +14,7 @@ document.addEventListener('DOMContentLoaded', function () {
     buses: document.getElementById('buses-view'),
     routes: document.getElementById('routes-view'),
     bookings: document.getElementById('bookings-view'),
+    schedules: document.getElementById('schedules-view'),
   };
 
   const menuItems = document.querySelectorAll('.sidebar li');
@@ -44,7 +45,7 @@ document.addEventListener('DOMContentLoaded', function () {
   const profileInfo = document.querySelector('.profile-info');
   const profileMenu = document.querySelector('.profile-menu');
   const logoutButton = document.getElementById('logout-button');
-  
+
   profileInfo.addEventListener('click', (e) => {
     e.stopPropagation();
     profileMenu.classList.toggle('active');
@@ -80,6 +81,7 @@ document.addEventListener('DOMContentLoaded', function () {
       case 'buses': fetchBusesData(); break;
       case 'routes': fetchRoutesData(); break;
       case 'bookings': fetchBookingsData(); break;
+      case 'schedules': fetchSchedulesData(); break;
     }
   }
 
@@ -102,6 +104,143 @@ document.addEventListener('DOMContentLoaded', function () {
     notification.className = 'notification show ' + type;
     setTimeout(() => { notification.className = 'notification'; }, 3000);
   }
+
+  function fetchSchedulesData() {
+    fetch(`${API_BASE_URL}/schedules`).then(res => res.json()).then(data => {
+      document.querySelector('#schedules-management-table tbody').innerHTML = data.map(schedule => {
+        // Helper function to format date and time
+        const formatDateTime = (dateTimeString) => {
+          if (!dateTimeString) return 'N/A';
+          const date = new Date(dateTimeString);
+          const datePart = date.toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+          const timePart = date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+          return `${datePart}<br><span class="time-display">${timePart}</span>`;
+        };
+
+        const departure = formatDateTime(schedule.departure_time);
+        const arrival = formatDateTime(schedule.arrival_time);
+        let actions = '';
+
+        if (schedule.status === 'scheduled' || schedule.status === 'delayed') {
+          actions = `
+            <button class="action-btn edit" title="Modify Schedule"><i class="fas fa-edit"></i></button>
+            <button class="action-btn" data-action="cancel-schedule" title="Cancel Schedule"><i class="fas fa-ban"></i></button>
+        `;
+        }
+
+        return `
+        <tr data-id="${schedule.id}">
+          <td>S${schedule.id.toString().padStart(3, '0')}</td>
+          <td>${schedule.bus_number || 'N/A'}</td>
+          <td>${schedule.route_name.replace(/ Bus Stand/g, '') || 'N/A'}</td>
+          <td>${departure}</td>
+          <td>${arrival}</td>
+          <td><span class="status ${schedule.status}">${schedule.status}</span></td>
+          <td><div class="action-buttons-container">${actions}</div></td>
+        </tr>`;
+      }).join('');
+    });
+  }
+
+  function formatDateTimeForInput(dateString) {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    const timezoneOffset = date.getTimezoneOffset() * 60000;
+    const localDate = new Date(date.getTime() - timezoneOffset);
+    return localDate.toISOString().slice(0, 16);
+  }
+
+  async function openScheduleModalForEdit(id) {
+    try {
+      const res = await fetch(`${API_BASE_URL}/schedules/details/${id}`);
+      if (!res.ok) throw new Error('Failed to fetch schedule details.');
+      const schedule = await res.json();
+
+      modalTitle.textContent = 'Modify Schedule';
+      modalForm.innerHTML = `
+            <label>Bus:</label><select id="bus_id" name="bus_id" required></select>
+            <label>Route:</label><select id="route_id" name="route_id" required></select>
+            <label>Staff (Conductor):</label><select id="staff_id" name="staff_id" required></select>
+            <label>Departure Time:</label><input type="datetime-local" name="departure_time" required>
+            <label>Arrival Time:</label><input type="datetime-local" name="arrival_time" required>
+            <button type="submit">Update Schedule</button>`;
+
+      await Promise.all([
+        populateSelect('bus_id', '/buses/list', 'id', 'bus_number'),
+        populateSelect('route_id', '/routes/list', 'id', 'route_name'),
+        populateSelect('staff_id', '/staff/list', 'id', 'name')
+      ]);
+
+      // Set the current values from the fetched schedule
+      document.getElementById('bus_id').value = schedule.bus_id;
+      document.getElementById('route_id').value = schedule.route_id;
+      document.getElementById('staff_id').value = schedule.staff_id;
+      modalForm.querySelector('input[name="departure_time"]').value = formatDateTimeForInput(schedule.departure_time);
+      modalForm.querySelector('input[name="arrival_time"]').value = formatDateTimeForInput(schedule.arrival_time);
+
+      openModal();
+      modalForm.onsubmit = (e) => handleScheduleUpdate(id, e);
+
+    } catch (err) {
+      showNotification(err.message, 'error');
+    }
+  }
+
+  async function handleScheduleUpdate(id, e) {
+    e.preventDefault();
+    const data = Object.fromEntries(new FormData(modalForm).entries());
+
+    try {
+      // Automatically fetch and add the driver based on the selected bus
+      const busRes = await fetch(`${API_BASE_URL}/buses/details/${data.bus_id}`);
+      if (!busRes.ok) throw new Error('Could not verify bus details.');
+      const bus = await busRes.json();
+
+      if (!bus.driver_id) {
+        showNotification('The selected bus has no assigned driver.', 'error');
+        return;
+      }
+      data.driver_id = bus.driver_id;
+
+      // Send the PUT request to update the schedule
+      const scheduleRes = await fetch(`${API_BASE_URL}/schedules/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      const result = await scheduleRes.json();
+      if (!scheduleRes.ok) throw new Error(result.error);
+
+      showNotification(result.message, 'success');
+      closeModal();
+      fetchSchedulesData();
+
+    } catch (error) {
+      showNotification(error.message, 'error');
+    }
+  }
+
+  // Add event listener for the new "Add Schedule" button
+  document.querySelector('#schedules-view .add-button').addEventListener('click', () => {
+    modalTitle.textContent = 'Add New Schedule';
+    // The form no longer includes a "Driver" select dropdown
+    modalForm.innerHTML = `
+        <label>Bus:</label><select id="bus_id" name="bus_id" required></select>
+        <label>Route:</label><select id="route_id" name="route_id" required></select>
+        <label>Staff (Conductor):</label><select id="staff_id" name="staff_id" required></select>
+        <label>Departure Time:</label><input type="datetime-local" name="departure_time" required>
+        <label>Arrival Time:</label><input type="datetime-local" name="arrival_time" required>
+        <button type="submit">Add Schedule</button>`;
+
+    // Populate dropdowns, excluding the one for drivers
+    populateSelect('bus_id', '/buses/list', 'id', 'bus_number');
+    populateSelect('route_id', '/routes/list', 'id', 'route_name');
+    populateSelect('staff_id', '/staff/list', 'id', 'name');
+
+    openModal();
+    // Assign the new, specific handler for this form
+    modalForm.onsubmit = handleAddScheduleSubmit;
+  });
 
   async function populateSelect(selectId, url, valueField, textField) {
     try {
@@ -264,7 +403,7 @@ document.addEventListener('DOMContentLoaded', function () {
     fetch(`${API_BASE_URL}/bookings`).then(res => res.json()).then(data => {
       document.querySelector('#bookings-management-table tbody').innerHTML = data.map(booking => {
         let actions = '';
-        
+
         // --- LOGIC CHANGE STARTS HERE ---
         let displayStatus = booking.status;
         let statusClass = booking.status.toLowerCase();
@@ -283,7 +422,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 <button class="action-btn cancel" title="Cancel Booking"><i class="fas fa-times"></i></button>
             </div>
           `;
-        } 
+        }
         else if (booking.status === 'completed' || booking.status === 'cancelled') {
           actions = `
             <div class="action-buttons-container">
@@ -557,32 +696,112 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   document.addEventListener('click', async (e) => {
+    // Find the closest action button and its corresponding table row
     const target = e.target.closest('.action-btn');
     if (!target) return;
     const row = target.closest('tr');
     if (!row) return;
+
+    // Get the ID and the current view from the element's context
     const id = row.dataset.id;
     const view = target.closest('.view').id;
 
+    // --- EDIT ACTIONS ---
     if (target.classList.contains('edit')) {
       if (view === 'buses-view') openBusModalForEdit(id);
       if (view === 'routes-view') openRouteModalForEdit(id);
-    } else if (target.classList.contains('delete')) {
+      if (view === 'schedules-view') openScheduleModalForEdit(id); // ADD THIS LINE
+    }
+
+    // --- DELETE ACTIONS ---
+    else if (target.classList.contains('delete')) {
       if (view === 'buses-view' && await showConfirmation('Delete this bus?')) {
         await deleteWithForce('buses', id, fetchBusesData);
       } else if (view === 'routes-view' && await showConfirmation('Delete this route?')) {
         await deleteWithForce('routes', id, fetchRoutesData);
-      } 
-      // --- ADD THIS ELSE IF BLOCK ---
-      else if (view === 'bookings-view' && await showConfirmation('Permanently delete this booking? This action cannot be undone.')) {
+      } else if (view === 'bookings-view' && await showConfirmation('Permanently delete this booking? This cannot be undone.')) {
         await deleteBooking(id);
+      } else if (view === 'schedules-view' && await showConfirmation('Delete this schedule? This cannot be undone.')) {
+        await deleteWithForce('schedules', id, fetchSchedulesData);
       }
-    } else if (target.classList.contains('cancel') && await showConfirmation('Cancel this booking?')) {
+    }
+
+    // --- BOOKING-SPECIFIC ACTIONS ---
+    else if (view === 'bookings-view' && target.classList.contains('cancel') && await showConfirmation('Cancel this booking?')) {
       await cancelBooking(id);
-    } else if (target.classList.contains('complete') && await showConfirmation('Mark payment as completed for this booking?')) {
+    } else if (view === 'bookings-view' && target.classList.contains('complete') && await showConfirmation('Mark this booking as completed?')) {
       await completeBooking(id);
     }
+
+    // --- SCHEDULE-SPECIFIC ACTIONS (USING data-action attribute) ---
+    const scheduleAction = target.dataset.action;
+    if (scheduleAction && view === 'schedules-view') {
+      let newStatus = '';
+      let confirmMessage = '';
+
+      switch (scheduleAction) {
+        case 'complete-schedule':
+          newStatus = 'completed';
+          confirmMessage = 'Mark this schedule as completed?';
+          break;
+        case 'delay-schedule':
+          newStatus = 'delayed';
+          confirmMessage = 'Mark this schedule as delayed?';
+          break;
+        case 'cancel-schedule':
+          newStatus = 'cancelled';
+          confirmMessage = 'Cancel this schedule?';
+          break;
+      }
+
+      if (newStatus && await showConfirmation(confirmMessage)) {
+        updateScheduleStatus(id, newStatus);
+      }
+    }
   });
+
+  async function handleAddScheduleSubmit(e) {
+    e.preventDefault();
+    const data = Object.fromEntries(new FormData(modalForm).entries());
+
+    if (!data.bus_id) {
+      showNotification('Please select a bus.', 'error');
+      return;
+    }
+
+    try {
+      // Fetch the details of the selected bus to get its driver
+      const busRes = await fetch(`${API_BASE_URL}/buses/details/${data.bus_id}`);
+      if (!busRes.ok) throw new Error('Could not verify bus details.');
+      const bus = await busRes.json();
+
+      if (!bus.driver_id) {
+        showNotification('The selected bus has no assigned driver. Please assign a driver to the bus first.', 'error');
+        return;
+      }
+
+      // Add the automatically found driver_id to the data
+      data.driver_id = bus.driver_id;
+
+      // Proceed to create the schedule
+      const scheduleRes = await fetch(`${API_BASE_URL}/schedules`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+
+      const result = await scheduleRes.json();
+      if (!scheduleRes.ok) throw new Error(result.error);
+
+      showNotification(result.message, 'success');
+      closeModal();
+      fetchSchedulesData(); // Refresh the schedules table
+      fetchDashboardData(); // Refresh dashboard stats
+
+    } catch (error) {
+      showNotification(error.message, 'error');
+    }
+  }
 
   async function openBusModalForEdit(id) {
     try {
@@ -590,10 +809,10 @@ document.addEventListener('DOMContentLoaded', function () {
       if (!res.ok) throw new Error('Failed to fetch bus details.');
       const bus = await res.json();
       modalTitle.textContent = 'Edit Bus';
-      
+
       // Corrected modal HTML with all bus types
       modalForm.innerHTML = `<label>Bus Number:</label><input type="text" name="bus_number" value="${bus.bus_number}" required><label>Capacity:</label><input type="number" name="capacity" value="${bus.capacity}" required><label>Driver:</label><select id="driver_id" name="driver_id"></select><label>Home Bus Stop:</label><select id="bus_stop_id" name="bus_stop_id"></select><label>Status:</label><select name="status"><option value="active">Active</option><option value="maintenance">Maintenance</option></select><label>Bus Type:</label><select name="bus_type"><option value="AC">AC</option><option value="Non-AC">Non-AC</option><option value="Sleeper">Sleeper</option><option value="Seater">Seater</option></select><button type="submit">Update Bus</button>`;
-      
+
       // Construct the URL to fetch the correct driver list
       const driverListUrl = bus.driver_id
         ? `/drivers/list?currentDriverId=${bus.driver_id}`
@@ -601,10 +820,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
       // Populate the dropdowns
       await Promise.all([
-          populateSelect('driver_id', driverListUrl, 'id', 'name'), 
-          populateSelect('bus_stop_id', '/bus_stops/list', 'id', 'name')
+        populateSelect('driver_id', driverListUrl, 'id', 'name'),
+        populateSelect('bus_stop_id', '/bus_stops/list', 'id', 'name')
       ]);
-      
+
       // Set the current values for all fields after they are populated
       document.getElementById('driver_id').value = bus.driver_id || '';
       document.getElementById('bus_stop_id').value = bus.bus_stop_id || '';
@@ -678,10 +897,28 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 
+  async function updateScheduleStatus(id, status) {
+    try {
+      const res = await fetch(`${API_BASE_URL}/schedules/${id}/status`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: status })
+      });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error);
+      showNotification(result.message, 'success');
+      fetchSchedulesData();
+    } catch (err) {
+      showNotification(err.message, 'error');
+    }
+  }
+
+  // Update the searchMap object
   const searchMap = {
     'bus-search': 'buses-management-table',
     'route-search': 'routes-management-table',
-    'booking-search': 'bookings-management-table'
+    'booking-search': 'bookings-management-table',
+    'schedule-search': 'schedules-management-table' // ADD THIS LINE
   };
 
   Object.keys(searchMap).forEach(inputId => {

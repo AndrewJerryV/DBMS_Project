@@ -10,7 +10,7 @@ const db = mysql.createConnection({
   host: 'localhost',
   user: 'root',
   password: 'password@123',
-  database: 'DBM_Proj'
+  database: 'DBMS_Project'
 });
 
 db.connect(err => {
@@ -76,6 +76,14 @@ app.get('/passengers/list', (req, res) => {
   });
 });
 
+app.get('/staff/list', (req, res) => {
+  const sql = "SELECT id, name FROM staff WHERE role IN ('conductor', 'operator') AND status = 'active'";
+  db.query(sql, (err, results) => {
+    if (err) return res.status(500).json({ error: 'Database error fetching staff.' });
+    res.json(results);
+  });
+});
+
 app.get('/passengers/search', (req, res) => {
     const { term } = req.query;
     if (!term) {
@@ -120,8 +128,85 @@ app.get('/bookings/find-trips', (req, res) => {
     });
 });
 
+app.get('/schedules', (req, res) => {
+  const sql = `
+    SELECT
+      s.id, s.departure_time, s.arrival_time, s.status,
+      b.bus_number,
+      CONCAT(o.name, ' -> ', d.name) AS route_name
+    FROM schedules s
+    LEFT JOIN buses b ON s.bus_id = b.id
+    LEFT JOIN routes r ON s.route_id = r.id
+    LEFT JOIN bus_stops o ON r.origin_bus_stop_id = o.id
+    LEFT JOIN bus_stops d ON r.destination_bus_stop_id = d.id
+    ORDER BY s.departure_time DESC;
+  `;
+  db.query(sql, (err, results) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(results);
+  });
+});
 
 // --- POST Endpoints to add data ---
+
+app.post('/schedules', (req, res) => {
+  const { bus_id, route_id, departure_time, arrival_time, driver_id, staff_id } = req.body;
+  const sql = 'INSERT INTO schedules (bus_id, route_id, departure_time, arrival_time, driver_id, staff_id) VALUES (?, ?, ?, ?, ?, ?)';
+  db.query(sql, [bus_id, route_id, departure_time, arrival_time, driver_id, staff_id], (err, result) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.status(201).json({ message: 'Schedule created successfully!', scheduleId: result.insertId });
+  });
+});
+
+// PUT to update a schedule's status
+app.put('/schedules/:id/status', (req, res) => {
+  const { id } = req.params;
+  const { status } = req.body;
+  if (!['scheduled', 'delayed', 'completed', 'cancelled'].includes(status)) {
+    return res.status(400).json({ error: 'Invalid status provided.' });
+  }
+  const sql = 'UPDATE schedules SET status = ? WHERE id = ?';
+  db.query(sql, [status, id], (err, result) => {
+    if (err) return res.status(500).json({ error: err.message });
+    if (result.affectedRows === 0) return res.status(404).json({ error: 'Schedule not found.' });
+    res.json({ message: `Schedule status updated to ${status}.` });
+  });
+});
+
+// DELETE a schedule
+app.delete('/schedules/:id', (req, res) => {
+  const { id } = req.params;
+  const sql = 'DELETE FROM schedules WHERE id = ?';
+  db.query(sql, [id], (err, result) => {
+    if (err) return res.status(500).json({ error: 'This schedule may have bookings. Cannot delete.' });
+    if (result.affectedRows === 0) return res.status(404).json({ error: 'Schedule not found.' });
+    res.json({ message: 'Schedule deleted successfully.' });
+  });
+});
+
+app.get('/schedules/details/:id', (req, res) => {
+  const { id } = req.params;
+  const sql = 'SELECT * FROM schedules WHERE id = ?';
+  db.query(sql, [id], (err, results) => {
+    if (err) return res.status(500).json({ error: err.message });
+    if (results.length === 0) return res.status(404).json({ error: 'Schedule not found.' });
+    res.json(results[0]);
+  });
+});
+
+// Add with other PUT endpoints to handle updates
+app.put('/schedules/:id', (req, res) => {
+    const { id } = req.params;
+    // The driver_id is sent from the client after being fetched there
+    const { bus_id, route_id, departure_time, arrival_time, staff_id, driver_id } = req.body;
+    const sql = 'UPDATE schedules SET bus_id = ?, route_id = ?, departure_time = ?, arrival_time = ?, driver_id = ?, staff_id = ? WHERE id = ?';
+    
+    db.query(sql, [bus_id, route_id, departure_time, arrival_time, driver_id, staff_id, id], (err, result) => {
+        if (err) return res.status(500).json({ error: err.message });
+        if (result.affectedRows === 0) return res.status(404).json({ error: 'Schedule not found.' });
+        res.json({ message: 'Schedule updated successfully!' });
+    });
+});
 
 app.post('/buses', (req, res) => {
   const { bus_number, capacity, driver_id, bus_stop_id, status, bus_type } = req.body;

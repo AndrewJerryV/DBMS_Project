@@ -798,3 +798,40 @@ tbody tr:hover {
   background-color: var(--status-maintenance);
   color: var(--status-maintenance-text);
 }
+
+.status.scheduled {
+  background-color: var(--status-confirmed);
+  color: var(--status-confirmed-text);
+}
+
+.status.delayed {
+  background-color: var(--status-maintenance);
+  color: var(--status-maintenance-text);
+}
+
+body.dark-theme input[type="datetime-local"] {
+  color-scheme: dark;
+}
+
+body.dark-theme .action-btn.cancel,
+body.dark-theme .action-btn[data-action="cancel-schedule"] {
+  color: #f87171; /* A brighter red for better contrast */
+}
+
+body.dark-theme .action-btn.edit {
+  color: #60a5fa; /* A lighter blue */
+}
+
+body.dark-theme .action-btn.complete {
+  color: #4ade80; /* A lighter green */
+}
+
+#schedules-management-table td {
+    vertical-align: middle; /* Ensures content aligns nicely */
+    line-height: 1.4;
+}
+
+.time-display {
+    font-size: 0.85em; /* Makes the time slightly smaller than the date */
+    color: var(--text-light);
+}
