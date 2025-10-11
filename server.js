@@ -213,6 +213,18 @@ app.put('/bookings/:id/cancel', (req, res) => {
   });
 });
 
+// --- NEW ENDPOINT TO COMPLETE BOOKING ---
+app.put('/bookings/:id/complete', (req, res) => {
+  const { id } = req.params;
+  const sql = "UPDATE bookings SET status = 'completed', payment_status = 'paid' WHERE id = ?";
+  db.query(sql, [id], (err, result) => {
+    if (err) return res.status(500).json({ error: err.message });
+    if (result.affectedRows === 0) return res.status(404).json({ error: 'Booking not found.' });
+    res.json({ message: 'Booking marked as completed successfully!' });
+  });
+});
+
+
 // --- DELETE Endpoints ---
 app.delete('/buses/:id', (req, res) => {
   const { id } = req.params;
@@ -463,6 +475,14 @@ app.get('/dashboard/bookings-by-day', (req, res) => {
 
 app.get('/dashboard/bus-utilization', (req, res) => {
   const sql = `SELECT status, COUNT(*) as count FROM buses GROUP BY status;`;
+  db.query(sql, (err, results) => {
+    if (err) return res.status(500).json({ error: 'Database error fetching chart data' });
+    res.json(results);
+  });
+});
+
+app.get('/dashboard/booking-status-distribution', (req, res) => {
+  const sql = `SELECT status, COUNT(*) as count FROM bookings GROUP BY status;`;
   db.query(sql, (err, results) => {
     if (err) return res.status(500).json({ error: 'Database error fetching chart data' });
     res.json(results);

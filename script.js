@@ -22,6 +22,14 @@ document.addEventListener('DOMContentLoaded', function () {
   const themeToggle = document.getElementById('theme-toggle');
   const body = document.body;
 
+  Chart.defaults.font.family = "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
+  Chart.defaults.plugins.tooltip.backgroundColor = '#1e293b';
+  Chart.defaults.plugins.tooltip.titleFont = { size: 14, weight: 'bold' };
+  Chart.defaults.plugins.tooltip.bodyFont = { size: 12 };
+  Chart.defaults.plugins.tooltip.padding = 10;
+  Chart.defaults.plugins.tooltip.cornerRadius = 8;
+  Chart.defaults.plugins.tooltip.displayColors = false;
+
   themeToggle.addEventListener('change', () => {
     body.classList.toggle('dark-theme');
     localStorage.setItem('theme', body.classList.contains('dark-theme') ? 'dark' : 'light');
@@ -36,7 +44,7 @@ document.addEventListener('DOMContentLoaded', function () {
   const profileInfo = document.querySelector('.profile-info');
   const profileMenu = document.querySelector('.profile-menu');
   const logoutButton = document.getElementById('logout-button');
-
+  
   profileInfo.addEventListener('click', (e) => {
     e.stopPropagation();
     profileMenu.classList.toggle('active');
@@ -114,97 +122,160 @@ document.addEventListener('DOMContentLoaded', function () {
 
   function renderBookingsChart() {
     fetch(`${API_BASE_URL}/dashboard/bookings-by-day`).then(res => res.json()).then(chartData => {
-        const ctx = document.getElementById('bookingsChart').getContext('2d');
-        if (bookingsChartInstance) bookingsChartInstance.destroy();
-        bookingsChartInstance = new Chart(ctx, {
-          type: 'bar',
-          data: {
-            labels: chartData.labels,
-            datasets: [{
-              label: 'Bookings', data: chartData.data,
-              backgroundColor: 'rgba(240, 101, 43, 0.2)',
-              borderColor: 'rgba(240, 101, 43, 1)',
-              borderWidth: 1
-            }]
+      const ctx = document.getElementById('bookingsChart').getContext('2d');
+
+      // Create a gradient for the bar chart
+      const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+      gradient.addColorStop(0, 'rgba(240, 101, 43, 0.6)');
+      gradient.addColorStop(1, 'rgba(240, 101, 43, 0.1)');
+
+      if (bookingsChartInstance) bookingsChartInstance.destroy();
+      bookingsChartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: chartData.labels,
+          datasets: [{
+            label: 'Bookings',
+            data: chartData.data,
+            backgroundColor: gradient,
+            borderColor: 'rgba(240, 101, 43, 1)',
+            borderWidth: 2,
+            borderRadius: 8,
+            hoverBackgroundColor: 'rgba(240, 101, 43, 0.8)'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: {
+              beginAtZero: true,
+              grid: { color: 'rgba(100, 116, 139, 0.2)' },
+              ticks: { color: '#64748b' }
+            },
+            x: {
+              grid: { display: false },
+              ticks: { color: '#64748b' }
+            }
           },
-          options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
-        });
+          plugins: {
+            legend: { display: false }
+          }
+        }
       });
+    });
   }
 
   function renderUtilizationChart() {
     fetch(`${API_BASE_URL}/dashboard/bus-utilization`).then(res => res.json()).then(utilizationData => {
-        const ctx = document.getElementById('utilizationChart').getContext('2d');
-        if (utilizationChartInstance) utilizationChartInstance.destroy();
-        utilizationChartInstance = new Chart(ctx, {
-          type: 'doughnut',
-          data: {
-            labels: utilizationData.map(item => item.status.charAt(0).toUpperCase() + item.status.slice(1)),
-            datasets: [{
-              label: 'Bus Utilization', data: utilizationData.map(item => item.count),
-              backgroundColor: ['rgba(46, 204, 113, 0.7)', 'rgba(241, 196, 15, 0.7)'],
-              hoverOffset: 4
-            }]
-          },
-          options: { responsive: true, maintainAspectRatio: false }
-        });
+      const ctx = document.getElementById('utilizationChart').getContext('2d');
+      if (utilizationChartInstance) utilizationChartInstance.destroy();
+      utilizationChartInstance = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: utilizationData.map(item => item.status.charAt(0).toUpperCase() + item.status.slice(1)),
+          datasets: [{
+            label: 'Bus Status',
+            data: utilizationData.map(item => item.count),
+            backgroundColor: [
+              'rgba(46, 204, 113, 0.8)', // Active
+              'rgba(241, 196, 15, 0.8)'  // Maintenance
+            ],
+            borderColor: body.classList.contains('dark-theme') ? '#1e293b' : '#fff',
+            borderWidth: 4,
+            hoverOffset: 10
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: {
+                color: '#64748b',
+                font: { size: 14 }
+              }
+            }
+          }
+        }
       });
+    });
   }
 
   function fetchDashboardData() {
     fetch(`${API_BASE_URL}/staff/details/${staffId}`).then(res => res.json()).then(data => {
-        document.getElementById('user-name').textContent = data.name;
-        document.getElementById('user-role').textContent = data.role.charAt(0).toUpperCase() + data.role.slice(1);
-      });
+      document.getElementById('user-name').textContent = data.name;
+      document.getElementById('user-role').textContent = data.role.charAt(0).toUpperCase() + data.role.slice(1);
+    });
     fetch(`${API_BASE_URL}/dashboard/summary`).then(res => res.json()).then(data => {
-        document.getElementById('totalBuses').textContent = data.totalBuses;
-        document.getElementById('totalRoutes').textContent = data.totalRoutes;
-        document.getElementById('totalBookings').textContent = data.totalBookings;
-        document.getElementById('totalRevenue').textContent = `₹${(data.totalRevenue || 0).toLocaleString()}`;
-      });
+      document.getElementById('totalBuses').textContent = data.totalBuses;
+      document.getElementById('totalRoutes').textContent = data.totalRoutes;
+      document.getElementById('totalBookings').textContent = data.totalBookings;
+      document.getElementById('totalRevenue').textContent = `₹${(data.totalRevenue || 0).toLocaleString()}`;
+    });
     fetch(`${API_BASE_URL}/buses`).then(res => res.json()).then(data => {
-        document.querySelector('#busTable tbody').innerHTML = data.map(bus => `<tr><td>${bus.bus_number}</td><td>${bus.capacity}</td><td>${bus.driver || '-'}</td></tr>`).join('');
-      });
+      document.querySelector('#busTable tbody').innerHTML = data.map(bus => `<tr><td>${bus.bus_number}</td><td>${bus.capacity}</td><td>${bus.driver || '-'}</td></tr>`).join('');
+    });
     fetch(`${API_BASE_URL}/drivers`).then(res => res.json()).then(data => {
-        document.querySelector('#driverTable tbody').innerHTML = data.map(driver => `<tr><td>${driver.driver}</td><td>${driver.assigned_bus || '—'}</td></tr>`).join('');
-      });
+      document.querySelector('#driverTable tbody').innerHTML = data.map(driver => `<tr><td>${driver.driver}</td><td>${driver.assigned_bus || '—'}</td></tr>`).join('');
+    });
     renderBookingsChart();
     renderUtilizationChart();
   }
 
   function fetchBusesData() {
     fetch(`${API_BASE_URL}/buses/full`).then(res => res.json()).then(data => {
-        document.querySelector('#buses-management-table tbody').innerHTML = data.map(bus => `
+      document.querySelector('#buses-management-table tbody').innerHTML = data.map(bus => `
             <tr data-id="${bus.id}">
-              <td>${bus.bus_number}</td><td>${bus.capacity}</td><td>${bus.driver || '-'}</td>
+              <td>${bus.bus_number}</td>
+              <td>${bus.capacity}</td>
+              <td>${bus.driver || '-'}</td>
+              <td>${bus.bus_stop || '-'}</td>
+              <td>${bus.bus_type}</td>
               <td><span class="status ${bus.status}">${bus.status}</span></td>
-              <td><button class="action-btn edit"><i class="fas fa-edit"></i></button><button class="action-btn delete"><i class="fas fa-trash"></i></button></td>
+              <td><div class="action-buttons-container"><button class="action-btn edit"><i class="fas fa-edit"></i></button><button class="action-btn delete"><i class="fas fa-trash"></i></button></div></td>
             </tr>`).join('');
-      });
+    });
   }
 
   function fetchRoutesData() {
     fetch(`${API_BASE_URL}/routes`).then(res => res.json()).then(data => {
-        document.querySelector('#routes-management-table tbody').innerHTML = data.map(route => `
+      document.querySelector('#routes-management-table tbody').innerHTML = data.map(route => `
             <tr data-id="${route.route_id}">
               <td>R${route.route_id.toString().padStart(3, '0')}</td><td>${route.origin}</td><td>${route.destination}</td>
               <td>${route.distance_km}</td><td>${route.hours}h ${route.minutes}m</td>
               <td><button class="action-btn edit"><i class="fas fa-edit"></i></button><button class="action-btn delete"><i class="fas fa-trash"></i></button></td>
             </tr>`).join('');
-      });
+    });
   }
 
   function fetchBookingsData() {
     fetch(`${API_BASE_URL}/bookings`).then(res => res.json()).then(data => {
-        document.querySelector('#bookings-management-table tbody').innerHTML = data.map(booking => `
+      document.querySelector('#bookings-management-table tbody').innerHTML = data.map(booking => {
+        let actions = '';
+        if (booking.status === 'pending' || booking.status === 'confirmed') {
+          actions = `
+                    <div class="action-buttons-container">
+                        <button class="action-btn complete" title="Mark as Completed"><i class="fas fa-check"></i></button>
+                        <button class="action-btn cancel" title="Cancel Booking"><i class="fas fa-times"></i></button>
+                    </div>
+                `;
+        }
+
+        return `
             <tr data-id="${booking.booking_id}">
-              <td>B${booking.booking_id.toString().padStart(3, '0')}</td><td>${booking.passenger_name}</td>
-              <td>${booking.bus_number}</td><td>${booking.route}</td>
-              <td>${new Date(booking.booking_time).toLocaleDateString()}</td><td>₹${booking.amount}</td>
+              <td>B${booking.booking_id.toString().padStart(3, '0')}</td>
+              <td>${booking.passenger_name}</td>
+              <td>${booking.bus_number}</td>
+              <td>${booking.route}</td>
+              <td>${new Date(booking.booking_time).toLocaleDateString()}</td>
+              <td>₹${booking.amount}</td>
               <td><span class="status ${booking.status.toLowerCase()}">${booking.status}</span></td>
-              <td><button class="action-btn cancel"><i class="fas fa-times"></i></button></td>
-            </tr>`).join('');
-      });
+              <td>${actions}</td>
+            </tr>`;
+      }).join('');
+    });
   }
 
   document.querySelector('#buses-view .add-button').addEventListener('click', () => {
@@ -259,19 +330,19 @@ document.addEventListener('DOMContentLoaded', function () {
     const searchTerm = emailInput.value;
     const datalist = document.getElementById('passenger-datalist');
     if (emailInput.dataset.selected !== 'true') {
-        emailInput.removeAttribute('data-id');
-        document.getElementById('passenger-name').value = '';
-        document.getElementById('passenger-phone').value = '';
+      emailInput.removeAttribute('data-id');
+      document.getElementById('passenger-name').value = '';
+      document.getElementById('passenger-phone').value = '';
     }
     emailInput.dataset.selected = 'false';
     if (searchTerm.length < 2) {
-        datalist.innerHTML = '';
-        return;
+      datalist.innerHTML = '';
+      return;
     }
     const response = await fetch(`${API_BASE_URL}/passengers/search?term=${searchTerm}`);
     const passengers = await response.json();
-    datalist.innerHTML = passengers.map(p => 
-        `<option value="${p.email}" data-id="${p.id}" data-name="${p.name}" data-phone="${p.phone || ''}">${p.name}</option>`
+    datalist.innerHTML = passengers.map(p =>
+      `<option value="${p.email}" data-id="${p.id}" data-name="${p.name}" data-phone="${p.phone || ''}">${p.name}</option>`
     ).join('');
   }
 
@@ -281,34 +352,34 @@ document.addEventListener('DOMContentLoaded', function () {
     const datalist = document.getElementById('passenger-datalist');
     const selectedOption = Array.from(datalist.options).find(opt => opt.value === emailInput.value);
     if (selectedOption) {
-        document.getElementById('passenger-name').value = selectedOption.dataset.name;
-        document.getElementById('passenger-phone').value = selectedOption.dataset.phone;
-        emailInput.setAttribute('data-id', selectedOption.dataset.id);
-        emailInput.dataset.selected = 'true';
+      document.getElementById('passenger-name').value = selectedOption.dataset.name;
+      document.getElementById('passenger-phone').value = selectedOption.dataset.phone;
+      emailInput.setAttribute('data-id', selectedOption.dataset.id);
+      emailInput.dataset.selected = 'true';
     }
   }
-  
+
   async function findAndDisplayTrips() {
     const originId = document.getElementById('origin_bus_stop_id').value;
     const destinationId = document.getElementById('destination_bus_stop_id').value;
     const resultsContainer = document.getElementById('trip-results-container');
     if (!originId || !destinationId || originId === destinationId) {
-        resultsContainer.innerHTML = `<p style="color: red;">Please select valid origin and destination.</p>`;
-        return;
+      resultsContainer.innerHTML = `<p style="color: red;">Please select valid origin and destination.</p>`;
+      return;
     }
     resultsContainer.innerHTML = `<p>Searching...</p>`;
     try {
-        const response = await fetch(`${API_BASE_URL}/bookings/find-trips?originId=${originId}&destinationId=${destinationId}`);
-        const trips = await response.json();
-        if (!response.ok) throw new Error(trips.error);
-        if (trips.length === 0) {
-            resultsContainer.innerHTML = `<p>No scheduled trips found.</p>`;
-            return;
-        }
-        resultsContainer.innerHTML = '<h4>Available Trips:</h4>' + trips.map(trip => {
-            const departure = new Date(trip.departure_time).toLocaleString();
-            const arrival = new Date(trip.arrival_time).toLocaleString();
-            return `
+      const response = await fetch(`${API_BASE_URL}/bookings/find-trips?originId=${originId}&destinationId=${destinationId}`);
+      const trips = await response.json();
+      if (!response.ok) throw new Error(trips.error);
+      if (trips.length === 0) {
+        resultsContainer.innerHTML = `<p>No scheduled trips found.</p>`;
+        return;
+      }
+      resultsContainer.innerHTML = '<h4>Available Trips:</h4>' + trips.map(trip => {
+        const departure = new Date(trip.departure_time).toLocaleString();
+        const arrival = new Date(trip.arrival_time).toLocaleString();
+        return `
             <div class="trip-option">
                 <p><strong>Fare:</strong> ₹${trip.fare}</p>
                 <p><strong>Departure:</strong> ${departure}</p>
@@ -325,77 +396,77 @@ document.addEventListener('DOMContentLoaded', function () {
                     <button class="book-trip-btn" data-bus-id="${trip.bus_id}" data-route-id="${trip.route_id}" data-amount="${trip.fare}">Book Now</button>
                 </div>
             </div>`;
-        }).join('');
+      }).join('');
     } catch (error) {
-        resultsContainer.innerHTML = `<p style="color: red;">${error.message}</p>`;
+      resultsContainer.innerHTML = `<p style="color: red;">${error.message}</p>`;
     }
   }
-  
+
   async function getOrCreatePassenger(name, email, phone) {
-      const emailInput = document.getElementById('passenger-email');
-      const existingId = emailInput.getAttribute('data-id');
-      if (existingId) return existingId;
-      try {
-          const response = await fetch(`${API_BASE_URL}/passengers`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ name, email, phone }),
-          });
-          const result = await response.json();
-          if (!response.ok && response.status !== 200) throw new Error(result.error);
-          if(response.status === 201) showNotification('New passenger created!', 'success');
-          return result.passengerId;
-      } catch (error) {
-          showNotification(error.message, 'error');
-          return null;
-      }
+    const emailInput = document.getElementById('passenger-email');
+    const existingId = emailInput.getAttribute('data-id');
+    if (existingId) return existingId;
+    try {
+      const response = await fetch(`${API_BASE_URL}/passengers`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, phone }),
+      });
+      const result = await response.json();
+      if (!response.ok && response.status !== 200) throw new Error(result.error);
+      if (response.status === 201) showNotification('New passenger created!', 'success');
+      return result.passengerId;
+    } catch (error) {
+      showNotification(error.message, 'error');
+      return null;
+    }
   }
 
   async function handleBookNowClick(e) {
-      e.preventDefault();
-      const name = document.getElementById('passenger-name').value.trim();
-      const email = document.getElementById('passenger-email').value.trim();
-      const phone = document.getElementById('passenger-phone').value.trim();
-      if (!name || !email) {
-          showNotification('Passenger Name and Email are required.', 'error');
-          return;
-      }
-      const passengerId = await getOrCreatePassenger(name, email, phone);
-      if (!passengerId) return;
-      const button = e.target;
-      const tripOptionDiv = button.closest('.trip-option');
-      const seatNumberInput = tripOptionDiv.querySelector('.seat-number-input');
-      const paymentMethodSelect = tripOptionDiv.querySelector('.payment-method-select');
-      const seatNumber = seatNumberInput.value.trim();
-      if (!seatNumber) {
-          showNotification('Please enter a seat number.', 'error');
-          seatNumberInput.focus();
-          return;
-      }
-      const bookingData = { 
-          passenger_id: passengerId, 
-          bus_id: button.dataset.busId, 
-          route_id: button.dataset.routeId, 
-          amount: button.dataset.amount, 
-          seat_number: seatNumber, 
-          payment_method: paymentMethodSelect.value, 
-          payment_status: 'pending' // Set default status to pending
-      };
-      try {
-          const response = await fetch(`${API_BASE_URL}/bookings`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(bookingData),
-          });
-          const result = await response.json();
-          if (!response.ok) throw new Error(result.error);
-          showNotification(result.message, 'success');
-          closeModal();
-          fetchBookingsData();
-          fetchDashboardData();
-      } catch (error) {
-          showNotification(error.message, 'error');
-      }
+    e.preventDefault();
+    const name = document.getElementById('passenger-name').value.trim();
+    const email = document.getElementById('passenger-email').value.trim();
+    const phone = document.getElementById('passenger-phone').value.trim();
+    if (!name || !email) {
+      showNotification('Passenger Name and Email are required.', 'error');
+      return;
+    }
+    const passengerId = await getOrCreatePassenger(name, email, phone);
+    if (!passengerId) return;
+    const button = e.target;
+    const tripOptionDiv = button.closest('.trip-option');
+    const seatNumberInput = tripOptionDiv.querySelector('.seat-number-input');
+    const paymentMethodSelect = tripOptionDiv.querySelector('.payment-method-select');
+    const seatNumber = seatNumberInput.value.trim();
+    if (!seatNumber) {
+      showNotification('Please enter a seat number.', 'error');
+      seatNumberInput.focus();
+      return;
+    }
+    const bookingData = {
+      passenger_id: passengerId,
+      bus_id: button.dataset.busId,
+      route_id: button.dataset.routeId,
+      amount: button.dataset.amount,
+      seat_number: seatNumber,
+      payment_method: paymentMethodSelect.value,
+      payment_status: 'pending' // Set default status to pending
+    };
+    try {
+      const response = await fetch(`${API_BASE_URL}/bookings`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(bookingData),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error);
+      showNotification(result.message, 'success');
+      closeModal();
+      fetchBookingsData();
+      fetchDashboardData();
+    } catch (error) {
+      showNotification(error.message, 'error');
+    }
   }
 
   async function handleFormSubmit(endpoint, refreshFunction, e) {
@@ -450,13 +521,18 @@ document.addEventListener('DOMContentLoaded', function () {
     if (!row) return;
     const id = row.dataset.id;
     const view = target.closest('.view').id;
+
     if (target.classList.contains('edit')) {
       if (view === 'buses-view') openBusModalForEdit(id);
       if (view === 'routes-view') openRouteModalForEdit(id);
     } else if (target.classList.contains('delete')) {
       if (view === 'buses-view' && await showConfirmation('Delete this bus?')) await deleteWithForce('buses', id, fetchBusesData);
       else if (view === 'routes-view' && await showConfirmation('Delete this route?')) await deleteWithForce('routes', id, fetchRoutesData);
-    } else if (target.classList.contains('cancel') && await showConfirmation('Cancel this booking?')) await cancelBooking(id);
+    } else if (target.classList.contains('cancel') && await showConfirmation('Cancel this booking?')) {
+      await cancelBooking(id);
+    } else if (target.classList.contains('complete') && await showConfirmation('Mark payment as completed for this booking?')) {
+      await completeBooking(id);
+    }
   });
 
   async function openBusModalForEdit(id) {
@@ -466,7 +542,7 @@ document.addEventListener('DOMContentLoaded', function () {
       const bus = await res.json();
       modalTitle.textContent = 'Edit Bus';
       modalForm.innerHTML = `<label>Bus Number:</label><input type="text" name="bus_number" value="${bus.bus_number}" required><label>Capacity:</label><input type="number" name="capacity" value="${bus.capacity}" required><label>Driver:</label><select id="driver_id" name="driver_id"></select><label>Home Bus Stop:</label><select id="bus_stop_id" name="bus_stop_id"></select><label>Status:</label><select name="status" value="${bus.status}"><option value="active">Active</option><option value="maintenance">Maintenance</option></select><label>Bus Type:</label><select name="bus_type" value="${bus.bus_type}"><option value="AC">AC</option><option value="Non-AC">Non-AC</option></select><button type="submit">Update Bus</button>`;
-      await Promise.all([ populateSelect('driver_id', '/drivers/list', 'id', 'name'), populateSelect('bus_stop_id', '/bus_stops/list', 'id', 'name') ]);
+      await Promise.all([populateSelect('driver_id', '/drivers/list', 'id', 'name'), populateSelect('bus_stop_id', '/bus_stops/list', 'id', 'name')]);
       document.getElementById('driver_id').value = bus.driver_id || '';
       document.getElementById('bus_stop_id').value = bus.bus_stop_id || '';
       openModal();
@@ -481,7 +557,7 @@ document.addEventListener('DOMContentLoaded', function () {
       const route = await res.json();
       modalTitle.textContent = 'Edit Route';
       modalForm.innerHTML = `<label>Origin:</label><select id="origin_bus_stop_id" name="origin_bus_stop_id"></select><label>Destination:</label><select id="destination_bus_stop_id" name="destination_bus_stop_id"></select><label>Distance (km):</label><input type="number" step="0.1" name="distance_km" value="${route.distance_km}" required><label>Duration (minutes):</label><input type="number" name="duration_min" value="${route.duration_min}" required><label>Fare (₹):</label><input type="number" step="0.01" name="fare" value="${route.fare}" required><button type="submit">Update Route</button>`;
-      await Promise.all([ populateSelect('origin_bus_stop_id', '/bus_stops/list', 'id', 'name'), populateSelect('destination_bus_stop_id', '/bus_stops/list', 'id', 'name') ]);
+      await Promise.all([populateSelect('origin_bus_stop_id', '/bus_stops/list', 'id', 'name'), populateSelect('destination_bus_stop_id', '/bus_stops/list', 'id', 'name')]);
       document.getElementById('origin_bus_stop_id').value = route.origin_bus_stop_id;
       document.getElementById('destination_bus_stop_id').value = route.destination_bus_stop_id;
       openModal();
@@ -514,18 +590,28 @@ document.addEventListener('DOMContentLoaded', function () {
     } catch (err) { showNotification(err.message, 'error'); }
   }
 
+  async function completeBooking(id) {
+    try {
+      const res = await fetch(`${API_BASE_URL}/bookings/${id}/complete`, { method: 'PUT' });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error);
+      showNotification(result.message, 'success');
+      fetchBookingsData();
+      fetchDashboardData();
+    } catch (err) {
+      showNotification(err.message, 'error');
+    }
+  }
+
   function filterTable(tableSelector, searchTerm) {
     const lowerCaseSearchTerm = searchTerm.toLowerCase().trim();
     const tableBody = document.querySelector(tableSelector);
     if (!tableBody) return;
     tableBody.querySelectorAll('tr').forEach(row => {
-        row.style.display = row.textContent.toLowerCase().includes(lowerCaseSearchTerm) ? '' : 'none';
+      row.style.display = row.textContent.toLowerCase().includes(lowerCaseSearchTerm) ? '' : 'none';
     });
   }
 
-  // --- FIX STARTS HERE ---
-  // The original code had a typo that generated incorrect table IDs.
-  // This new approach explicitly maps search inputs to the correct table IDs, making it robust.
   const searchMap = {
     'bus-search': 'buses-management-table',
     'route-search': 'routes-management-table',
@@ -541,15 +627,14 @@ document.addEventListener('DOMContentLoaded', function () {
       });
     }
   });
-  // --- FIX ENDS HERE ---
 
   function debounce(func, delay) {
-      let timeout;
-      return function(...args) {
-          clearTimeout(timeout);
-          timeout = setTimeout(() => func.apply(this, args), delay);
-      };
+    let timeout;
+    return function (...args) {
+      clearTimeout(timeout);
+      timeout = setTimeout(() => func.apply(this, args), delay);
+    };
   }
-  
+
   fetchDashboardData();
 });

@@ -10,7 +10,7 @@
   --text-light: #7f8c8d;
   --gray: #6c757d;
   --hover-bg: #f1f5f9; 
-  --table-header-bg: #f8f9fa;
+  --table-header-bg: #e9ecef;
   --table-row-hover: #f8f9fa;
   --status-confirmed: #e3f2fd;
   --status-confirmed-text: #1565c0;
@@ -18,6 +18,8 @@
   --status-cancelled-text: #c62828;
   --status-active: #e8f5e9;
   --status-active-text: #2e7d32;
+  --status-completed: #e8f5e9;
+  --status-completed-text: #2e7d32; 
   --status-maintenance: #fff8e1;
   --status-maintenance-text: #f57f17;
   --modal-content-bg: #fefefe;
@@ -36,7 +38,7 @@ body.dark-theme {
   --text-light: #94a3b8;
   --gray: #94a3b8;
   --hover-bg: #334155;
-  --table-header-bg: #1a2a3a;
+  --table-header-bg: #152230;
   --table-row-hover: #334155;
   --status-confirmed: #1e3a8a;
   --status-confirmed-text: #bfdbfe;
@@ -44,6 +46,8 @@ body.dark-theme {
   --status-cancelled-text: #fecaca;
   --status-active: #14532d;
   --status-active-text: #dcfce7;
+  --status-completed: #14532d;
+  --status-completed-text: #dcfce7;
   --status-maintenance: #78350f;
   --status-maintenance-text: #fef3c7;
   --modal-content-bg: #1e293b;
@@ -196,6 +200,9 @@ a {
   bottom: 0;
   background-color: #ccc;
   transition: .4s;
+  /* Add display flex to center the circle */
+  display: flex;
+  align-items: center;
 }
 
 .slider:before {
@@ -203,8 +210,7 @@ a {
   content: "";
   height: 18px;
   width: 18px;
-  left: 3px;
-  bottom: 3px;
+  left: 3px; /* Keep the initial left padding */
   background-color: white;
   transition: .4s;
 }
@@ -372,11 +378,12 @@ td {
   padding: 12px 15px;
   text-align: left;
   border-bottom: 1px solid var(--sidebar-border);
+  white-space: nowrap;
 }
 
 th {
   background-color: var(--table-header-bg);
-  color: var(--text-light);
+  color: var(--text-dark); /* Changed from --text-light */
   font-weight: 600;
 }
 
@@ -439,9 +446,15 @@ tbody tr:hover {
   color: var(--status-maintenance-text);
 }
 
-.status.confirmed, .status.pending, .status.completed {
+.status.confirmed, .status.pending { /* "completed" was removed from here */
   background-color: var(--status-confirmed);
   color: var(--status-confirmed-text);
+}
+
+/* Add this new rule for the completed status */
+.status.completed {
+  background-color: var(--status-completed);
+  color: var(--status-completed-text);
 }
 
 .status.cancelled {
@@ -466,8 +479,14 @@ tbody tr:hover {
 
 .action-btn.edit { color: #1976d2; }
 .action-btn.delete { color: #d32f2f; }
-.action-btn.view { color: #388e3c; }
-.action-btn.cancel { color: #f57c00; }
+.action-btn.complete { color: #388e3c; }
+.action-btn.cancel { color: #d32f2f; }
+
+/* --- NEW: Container for action buttons to ensure horizontal alignment --- */
+.action-buttons-container {
+    display: flex;
+    align-items: center;
+}
 
 /* Charts Section */
 .charts-section {
