@@ -21,13 +21,24 @@ db.connect(err => {
 // --- THIS QUERY IS UPDATED ---
 // The driver list now shows available drivers who are either unassigned OR assigned to a bus under maintenance.
 app.get('/drivers/list', (req, res) => {
-  db.query(`
-    SELECT d.id, d.name 
+  const { currentDriverId } = req.query;
+  let sql = `
+    SELECT d.id, d.name
     FROM drivers d
     LEFT JOIN buses b ON d.id = b.driver_id
-    WHERE d.availability = 'available' AND (b.id IS NULL OR b.status = 'maintenance')
-  `, (err, results) => {
-    if (err) throw err;
+    WHERE d.availability = 'available' AND b.id IS NULL
+  `;
+  const params = [];
+
+  if (currentDriverId) {
+    sql += ` UNION SELECT id, name FROM drivers WHERE id = ? `;
+    params.push(currentDriverId);
+  }
+
+  sql += ' ORDER BY name;';
+
+  db.query(sql, params, (err, results) => {
+    if (err) return res.status(500).json({ error: 'Database error fetching drivers.' });
     res.json(results);
   });
 });
@@ -115,9 +126,12 @@ app.get('/bookings/find-trips', (req, res) => {
 app.post('/buses', (req, res) => {
   const { bus_number, capacity, driver_id, bus_stop_id, status, bus_type } = req.body;
   const sql = 'INSERT INTO buses (bus_number, capacity, driver_id, bus_stop_id, status, bus_type) VALUES (?, ?, ?, ?, ?, ?)';
-  db.query(sql, [bus_number, capacity, driver_id, bus_stop_id, status, bus_type], (err, result) => {
+  db.query(sql, [bus_number, capacity, driver_id || null, bus_stop_id, status, bus_type], (err, result) => {
     if (err) {
-      console.error(err);
+      // Check for the unique constraint violation error
+      if (err.code === 'ER_DUP_ENTRY') {
+        return res.status(409).json({ error: `Bus number '${bus_number}' already exists.` });
+      }
       return res.status(500).json({ error: err.message });
     }
     res.status(201).json({ message: 'Bus added successfully!', busId: result.insertId });
@@ -188,12 +202,32 @@ app.post('/bookings', (req, res) => {
 app.put('/buses/:id', (req, res) => {
   const { id } = req.params;
   const { bus_number, capacity, driver_id, bus_stop_id, status, bus_type } = req.body;
+  let finalDriverId = driver_id || null;
+  let message = 'Bus updated successfully!';
+
+  if (status === 'maintenance') {
+    finalDriverId = null;
+    message = 'Bus set to maintenance and driver has been un-assigned.';
+  }
+
   const sql = 'UPDATE buses SET bus_number = ?, capacity = ?, driver_id = ?, bus_stop_id = ?, status = ?, bus_type = ? WHERE id = ?';
-  db.query(sql, [bus_number, capacity, driver_id || null, bus_stop_id || null, status, bus_type, id], (err, result) => {
+  db.query(sql, [bus_number, capacity, finalDriverId, bus_stop_id || null, status, bus_type, id], (err, result) => {
     if (err) return res.status(500).json({ error: err.message });
-    res.json({ message: 'Bus updated successfully!' });
+    if (result.affectedRows === 0) return res.status(404).json({ error: 'Bus not found.' });
+    res.json({ message: message });
   });
 });
+
+app.delete('/bookings/:id', (req, res) => {
+  const { id } = req.params;
+  const sql = 'DELETE FROM bookings WHERE id = ?';
+  db.query(sql, [id], (err, result) => {
+    if (err) return res.status(500).json({ error: err.message });
+    if (result.affectedRows === 0) return res.status(404).json({ error: 'Booking not found.' });
+    res.json({ message: 'Booking deleted permanently.' });
+  });
+});
+
 app.put('/routes/:id', (req, res) => {
   const { id } = req.params;
   const { origin_bus_stop_id, destination_bus_stop_id, distance_km, duration_min, fare } = req.body;
@@ -374,8 +408,15 @@ app.get('/buses', (req, res) => {
 
 app.get('/drivers', (req, res) => {
   db.query(`
-    SELECT d.name AS driver, b.bus_number AS assigned_bus, d.availability
-    FROM drivers d LEFT JOIN buses b ON d.id = b.driver_id
+    SELECT
+      d.name AS driver,
+      CASE
+        WHEN d.availability = 'on_leave' THEN NULL
+        ELSE b.bus_number
+      END AS assigned_bus,
+      d.availability
+    FROM drivers d
+    LEFT JOIN buses b ON d.id = b.driver_id
   `, (err, results) => {
     if (err) throw err;
     res.json(results);

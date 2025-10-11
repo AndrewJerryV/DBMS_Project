@@ -217,8 +217,18 @@ document.addEventListener('DOMContentLoaded', function () {
     fetch(`${API_BASE_URL}/buses`).then(res => res.json()).then(data => {
       document.querySelector('#busTable tbody').innerHTML = data.map(bus => `<tr><td>${bus.bus_number}</td><td>${bus.capacity}</td><td>${bus.driver || '-'}</td></tr>`).join('');
     });
+    // --- THIS SECTION IS UPDATED ---
     fetch(`${API_BASE_URL}/drivers`).then(res => res.json()).then(data => {
-      document.querySelector('#driverTable tbody').innerHTML = data.map(driver => `<tr><td>${driver.driver}</td><td>${driver.assigned_bus || '—'}</td></tr>`).join('');
+      document.querySelector('#driverTable tbody').innerHTML = data.map(driver => `
+        <tr>
+          <td>${driver.driver}</td>
+          <td>${driver.assigned_bus || '—'}</td>
+          <td>
+            <span class="status ${driver.availability.toLowerCase().replace('_', '-')}">
+              ${driver.availability.replace('_', ' ')}
+            </span>
+          </td>
+        </tr>`).join('');
     });
     renderBookingsChart();
     renderUtilizationChart();
@@ -254,13 +264,32 @@ document.addEventListener('DOMContentLoaded', function () {
     fetch(`${API_BASE_URL}/bookings`).then(res => res.json()).then(data => {
       document.querySelector('#bookings-management-table tbody').innerHTML = data.map(booking => {
         let actions = '';
+        
+        // --- LOGIC CHANGE STARTS HERE ---
+        let displayStatus = booking.status;
+        let statusClass = booking.status.toLowerCase();
+
+        // If the database status is 'confirmed', display it as 'pending'
+        if (booking.status === 'confirmed') {
+          displayStatus = 'pending';
+          statusClass = 'pending';
+        }
+        // --- LOGIC CHANGE ENDS HERE ---
+
         if (booking.status === 'pending' || booking.status === 'confirmed') {
           actions = `
-                    <div class="action-buttons-container">
-                        <button class="action-btn complete" title="Mark as Completed"><i class="fas fa-check"></i></button>
-                        <button class="action-btn cancel" title="Cancel Booking"><i class="fas fa-times"></i></button>
-                    </div>
-                `;
+            <div class="action-buttons-container">
+                <button class="action-btn complete" title="Mark as Completed"><i class="fas fa-check"></i></button>
+                <button class="action-btn cancel" title="Cancel Booking"><i class="fas fa-times"></i></button>
+            </div>
+          `;
+        } 
+        else if (booking.status === 'completed' || booking.status === 'cancelled') {
+          actions = `
+            <div class="action-buttons-container">
+                <button class="action-btn delete" title="Delete Booking"><i class="fas fa-trash"></i></button>
+            </div>
+          `;
         }
 
         return `
@@ -271,16 +300,29 @@ document.addEventListener('DOMContentLoaded', function () {
               <td>${booking.route}</td>
               <td>${new Date(booking.booking_time).toLocaleDateString()}</td>
               <td>₹${booking.amount}</td>
-              <td><span class="status ${booking.status.toLowerCase()}">${booking.status}</span></td>
+              <td><span class="status ${statusClass}">${displayStatus}</span></td>
               <td>${actions}</td>
             </tr>`;
       }).join('');
     });
   }
 
+  async function deleteBooking(id) {
+    try {
+      const res = await fetch(`${API_BASE_URL}/bookings/${id}`, { method: 'DELETE' });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error);
+      showNotification(result.message, 'success');
+      fetchBookingsData();
+      fetchDashboardData();
+    } catch (err) {
+      showNotification(err.message, 'error');
+    }
+  }
+
   document.querySelector('#buses-view .add-button').addEventListener('click', () => {
     modalTitle.textContent = 'Add New Bus';
-    modalForm.innerHTML = `<label>Bus Number:</label><input type="text" name="bus_number" required><label>Capacity:</label><input type="number" name="capacity" required><label>Driver:</label><select id="driver_id" name="driver_id"></select><label>Home Bus Stop:</label><select id="bus_stop_id" name="bus_stop_id"></select><label>Status:</label><select name="status"><option value="active">Active</option><option value="maintenance">Maintenance</option></select><label>Bus Type:</label><select name="bus_type"><option value="AC">AC</option><option value="Non-AC">Non-AC</option></select><button type="submit">Add Bus</button>`;
+    modalForm.innerHTML = `<label>Bus Number:</label><input type="text" name="bus_number" required><label>Capacity:</label><input type="number" name="capacity" required><label>Driver:</label><select id="driver_id" name="driver_id"></select><label>Home Bus Stop:</label><select id="bus_stop_id" name="bus_stop_id"></select><label>Status:</label><select name="status"><option value="active">Active</option><option value="maintenance">Maintenance</option></select><label>Bus Type:</label><select name="bus_type"><option value="AC">AC</option><option value="Non-AC">Non-AC</option><option value="Sleeper">Sleeper</option><option value="Seater">Seater</option></select><button type="submit">Add Bus</button>`;
     populateSelect('driver_id', '/drivers/list', 'id', 'name');
     populateSelect('bus_stop_id', '/bus_stops/list', 'id', 'name');
     openModal();
@@ -526,8 +568,15 @@ document.addEventListener('DOMContentLoaded', function () {
       if (view === 'buses-view') openBusModalForEdit(id);
       if (view === 'routes-view') openRouteModalForEdit(id);
     } else if (target.classList.contains('delete')) {
-      if (view === 'buses-view' && await showConfirmation('Delete this bus?')) await deleteWithForce('buses', id, fetchBusesData);
-      else if (view === 'routes-view' && await showConfirmation('Delete this route?')) await deleteWithForce('routes', id, fetchRoutesData);
+      if (view === 'buses-view' && await showConfirmation('Delete this bus?')) {
+        await deleteWithForce('buses', id, fetchBusesData);
+      } else if (view === 'routes-view' && await showConfirmation('Delete this route?')) {
+        await deleteWithForce('routes', id, fetchRoutesData);
+      } 
+      // --- ADD THIS ELSE IF BLOCK ---
+      else if (view === 'bookings-view' && await showConfirmation('Permanently delete this booking? This action cannot be undone.')) {
+        await deleteBooking(id);
+      }
     } else if (target.classList.contains('cancel') && await showConfirmation('Cancel this booking?')) {
       await cancelBooking(id);
     } else if (target.classList.contains('complete') && await showConfirmation('Mark payment as completed for this booking?')) {
@@ -541,10 +590,27 @@ document.addEventListener('DOMContentLoaded', function () {
       if (!res.ok) throw new Error('Failed to fetch bus details.');
       const bus = await res.json();
       modalTitle.textContent = 'Edit Bus';
-      modalForm.innerHTML = `<label>Bus Number:</label><input type="text" name="bus_number" value="${bus.bus_number}" required><label>Capacity:</label><input type="number" name="capacity" value="${bus.capacity}" required><label>Driver:</label><select id="driver_id" name="driver_id"></select><label>Home Bus Stop:</label><select id="bus_stop_id" name="bus_stop_id"></select><label>Status:</label><select name="status" value="${bus.status}"><option value="active">Active</option><option value="maintenance">Maintenance</option></select><label>Bus Type:</label><select name="bus_type" value="${bus.bus_type}"><option value="AC">AC</option><option value="Non-AC">Non-AC</option></select><button type="submit">Update Bus</button>`;
-      await Promise.all([populateSelect('driver_id', '/drivers/list', 'id', 'name'), populateSelect('bus_stop_id', '/bus_stops/list', 'id', 'name')]);
+      
+      // Corrected modal HTML with all bus types
+      modalForm.innerHTML = `<label>Bus Number:</label><input type="text" name="bus_number" value="${bus.bus_number}" required><label>Capacity:</label><input type="number" name="capacity" value="${bus.capacity}" required><label>Driver:</label><select id="driver_id" name="driver_id"></select><label>Home Bus Stop:</label><select id="bus_stop_id" name="bus_stop_id"></select><label>Status:</label><select name="status"><option value="active">Active</option><option value="maintenance">Maintenance</option></select><label>Bus Type:</label><select name="bus_type"><option value="AC">AC</option><option value="Non-AC">Non-AC</option><option value="Sleeper">Sleeper</option><option value="Seater">Seater</option></select><button type="submit">Update Bus</button>`;
+      
+      // Construct the URL to fetch the correct driver list
+      const driverListUrl = bus.driver_id
+        ? `/drivers/list?currentDriverId=${bus.driver_id}`
+        : '/drivers/list';
+
+      // Populate the dropdowns
+      await Promise.all([
+          populateSelect('driver_id', driverListUrl, 'id', 'name'), 
+          populateSelect('bus_stop_id', '/bus_stops/list', 'id', 'name')
+      ]);
+      
+      // Set the current values for all fields after they are populated
       document.getElementById('driver_id').value = bus.driver_id || '';
       document.getElementById('bus_stop_id').value = bus.bus_stop_id || '';
+      modalForm.querySelector('select[name="status"]').value = bus.status;
+      modalForm.querySelector('select[name="bus_type"]').value = bus.bus_type;
+
       openModal();
       modalForm.onsubmit = handleFormUpdate.bind(null, 'buses', id, fetchBusesData);
     } catch (err) { showNotification(err.message, 'error'); }

@@ -48,7 +48,7 @@ body.dark-theme {
   --status-active-text: #dcfce7;
   --status-completed: #14532d;
   --status-completed-text: #dcfce7;
-  --status-maintenance: #78350f;
+  --status-maintenance: #8a3e11;
   --status-maintenance-text: #fef3c7;
   --modal-content-bg: #1e293b;
   --input-border: #4b5563;
@@ -446,9 +446,14 @@ tbody tr:hover {
   color: var(--status-maintenance-text);
 }
 
-.status.confirmed, .status.pending { /* "completed" was removed from here */
-  background-color: var(--status-confirmed);
-  color: var(--status-confirmed-text);
+.status.active {
+  background-color: var(--status-active);
+  color: var(--status-active-text);
+}
+
+.status.pending {
+  background-color: var(--status-maintenance);
+  color: var(--status-maintenance-text);
 }
 
 /* Add this new rule for the completed status */
@@ -781,4 +786,15 @@ tbody tr:hover {
   background-color: var(--status-active-text);
   color: var(--status-active);
   transform: scale(1.05);
+}
+
+/* --- NEW: Driver Availability Statuses --- */
+.status.available {
+  background-color: var(--status-active);
+  color: var(--status-active-text);
+}
+
+.status.on-leave {
+  background-color: var(--status-maintenance);
+  color: var(--status-maintenance-text);
 }
