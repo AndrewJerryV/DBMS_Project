@@ -162,7 +162,8 @@ app.post('/schedules', (req, res) => {
 app.put('/schedules/:id/status', (req, res) => {
   const { id } = req.params;
   const { status } = req.body;
-  if (!['scheduled', 'delayed', 'completed', 'cancelled'].includes(status)) {
+  // Only allow 'scheduled' or 'cancelled' as valid statuses
+  if (!['scheduled', 'cancelled'].includes(status)) {
     return res.status(400).json({ error: 'Invalid status provided.' });
   }
   const sql = 'UPDATE schedules SET status = ? WHERE id = ?';
@@ -525,7 +526,9 @@ app.post('/staff/login', (req, res) => {
 
 app.get('/staff/details/:id', (req, res) => {
   const { id } = req.params;
-  db.query('SELECT id, name, role, email, phone, status FROM staff WHERE id = ?', [id], (err, results) => {
+  // This query is updated to include the 'salary' column
+  const sql = 'SELECT id, name, role, email, phone, status, date_joined, salary FROM staff WHERE id = ?';
+  db.query(sql, [id], (err, results) => {
     if (err) return res.status(500).json({ error: err.message });
     if (results.length === 0) return res.status(404).json({ error: 'Staff not found.' });
     res.json(results[0]);

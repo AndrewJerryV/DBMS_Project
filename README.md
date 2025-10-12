@@ -1,3 +1,8 @@
+**To use with the new database**
+mysql -u root -p DBMS_Project < <project foler>\dbms_project_backup.sql
+
+
+
 Download MySQl from https://dev.mysql.com/downloads/file/?id=542923<br>
 Use default settings during installation<br>
 MUST SET PASSWORD FOR MYSQL TO THIS - **password@123**<br>

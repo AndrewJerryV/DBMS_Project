@@ -804,11 +804,6 @@ tbody tr:hover {
   color: var(--status-confirmed-text);
 }
 
-.status.delayed {
-  background-color: var(--status-maintenance);
-  color: var(--status-maintenance-text);
-}
-
 body.dark-theme input[type="datetime-local"] {
   color-scheme: dark;
 }

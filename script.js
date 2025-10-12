@@ -108,7 +108,6 @@ document.addEventListener('DOMContentLoaded', function () {
   function fetchSchedulesData() {
     fetch(`${API_BASE_URL}/schedules`).then(res => res.json()).then(data => {
       document.querySelector('#schedules-management-table tbody').innerHTML = data.map(schedule => {
-        // Helper function to format date and time
         const formatDateTime = (dateTimeString) => {
           if (!dateTimeString) return 'N/A';
           const date = new Date(dateTimeString);
@@ -121,10 +120,17 @@ document.addEventListener('DOMContentLoaded', function () {
         const arrival = formatDateTime(schedule.arrival_time);
         let actions = '';
 
-        if (schedule.status === 'scheduled' || schedule.status === 'delayed') {
+        // If scheduled, show Modify and Cancel buttons.
+        if (schedule.status === 'scheduled') {
           actions = `
             <button class="action-btn edit" title="Modify Schedule"><i class="fas fa-edit"></i></button>
             <button class="action-btn" data-action="cancel-schedule" title="Cancel Schedule"><i class="fas fa-ban"></i></button>
+        `;
+        }
+        // If cancelled, show the Delete (dust bin) button.
+        else if (schedule.status === 'cancelled') {
+          actions = `
+            <button class="action-btn delete" title="Delete Permanently"><i class="fas fa-trash"></i></button>
         `;
         }
 
@@ -133,9 +139,9 @@ document.addEventListener('DOMContentLoaded', function () {
           <td>S${schedule.id.toString().padStart(3, '0')}</td>
           <td>${schedule.bus_number || 'N/A'}</td>
           <td>${schedule.route_name.replace(/ Bus Stand/g, '') || 'N/A'}</td>
-          <td>${departure}</td>
-          <td>${arrival}</td>
-          <td><span class="status ${schedule.status}">${schedule.status}</span></td>
+          <td class="status-cell">${departure}</td>
+          <td class="status-cell">${arrival}</td>
+          <td class="status-cell"><span class="status ${schedule.status}">${schedule.status}</span></td>
           <td><div class="action-buttons-container">${actions}</div></td>
         </tr>`;
       }).join('');
@@ -735,27 +741,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // --- SCHEDULE-SPECIFIC ACTIONS (USING data-action attribute) ---
     const scheduleAction = target.dataset.action;
-    if (scheduleAction && view === 'schedules-view') {
-      let newStatus = '';
-      let confirmMessage = '';
-
-      switch (scheduleAction) {
-        case 'complete-schedule':
-          newStatus = 'completed';
-          confirmMessage = 'Mark this schedule as completed?';
-          break;
-        case 'delay-schedule':
-          newStatus = 'delayed';
-          confirmMessage = 'Mark this schedule as delayed?';
-          break;
-        case 'cancel-schedule':
-          newStatus = 'cancelled';
-          confirmMessage = 'Cancel this schedule?';
-          break;
-      }
-
-      if (newStatus && await showConfirmation(confirmMessage)) {
-        updateScheduleStatus(id, newStatus);
+    if (scheduleAction === 'cancel-schedule' && view === 'schedules-view') {
+      if (await showConfirmation('Cancel this schedule?')) {
+        updateScheduleStatus(id, 'cancelled');
       }
     }
   });

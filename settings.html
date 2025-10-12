@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,34 +9,39 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
-          --primary: #F0652B;
-          --primary-dark: #c94c1f;
-          --primary-light: #ff8c5c;
-          --body-bg: #f5f7fa;
-          --sidebar-bg: #2c3e50;
-          --card-bg: white;
-          --text-dark: #2c3e50;
-          --text-light: #7f8c8d;
-          --gray: #95a5a6;
-          --input-border: #dfe4ea;
-          --success: #2ecc71;
-          --danger: #e74c3c;
-          --border-radius: 12px;
-          --box-shadow: 0 4px 15px rgba(0, 0, 0, 0.07);
-          --transition: all 0.3s ease;
+            --primary: #F0652B;
+            --primary-dark: #c94c1f;
+            --primary-light: #ff8c5c;
+            --body-bg: #f5f7fa;
+            --sidebar-bg: #2c3e50;
+            --card-bg: white;
+            --text-dark: #2c3e50;
+            --text-light: #7f8c8d;
+            --gray: #95a5a6;
+            --input-border: #dfe4ea;
+            --success: #2ecc71;
+            --danger: #e74c3c;
+            --border-radius: 12px;
+            --box-shadow: 0 4px 15px rgba(0, 0, 0, 0.07);
+            --transition: all 0.3s ease;
         }
 
         body.dark-theme {
-          --body-bg: #0f172a;
-          --sidebar-bg: #1a2a3a;
-          --card-bg: #1e293b;
-          --text-dark: #e2e8f0;
-          --text-light: #94a3b8;
-          --gray: #94a3b8;
-          --input-border: #334155;
+            --body-bg: #0f172a;
+            --sidebar-bg: #1a2a3a;
+            --card-bg: #1e293b;
+            --text-dark: #e2e8f0;
+            --text-light: #94a3b8;
+            --gray: #94a3b8;
+            --input-border: #334155;
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
 
         body {
             background-color: var(--body-bg);
@@ -60,56 +66,231 @@
             align-items: center;
         }
 
-        .logo { display: flex; align-items: center; gap: 15px; }
-        .logo img { width: 40px; }
-        .logo h1 { font-size: 22px; color: var(--text-dark); }
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .logo img {
+            width: 40px;
+        }
+
+        .logo h1 {
+            font-size: 22px;
+            color: var(--text-dark);
+        }
 
         .back-link {
-            color: var(--text-dark); text-decoration: none;
-            background: var(--body-bg); padding: 8px 15px;
-            border-radius: 30px; transition: var(--transition);
+            color: var(--text-dark);
+            text-decoration: none;
+            background: var(--body-bg);
+            padding: 8px 15px;
+            border-radius: 30px;
+            transition: var(--transition);
             font-weight: 500;
         }
-        .back-link:hover { background: var(--primary); color: white; }
 
-        /* NEW: Two-column grid layout for settings */
+        .back-link:hover {
+            background: var(--primary);
+            color: white;
+        }
+
         .settings-grid {
             display: grid;
             grid-template-columns: 300px 1fr;
             gap: 30px;
         }
 
-        /* NEW: Profile summary card on the left */
         .profile-card {
             background: var(--card-bg);
             border-radius: var(--border-radius);
             box-shadow: var(--box-shadow);
-            padding: 30px;
+            padding: 0;
+            overflow: hidden;
+            position: relative;
+            height: fit-content;
+        }
+
+        .profile-header {
+            background: linear-gradient(135deg, var(--primary-light) 0%, var(--primary) 100%);
+            padding: 30px 20px 60px;
             text-align: center;
+            position: relative;
         }
 
         .profile-avatar {
-            width: 100px; height: 100px; border-radius: 50%;
-            background: linear-gradient(135deg, var(--primary-light) 0%, var(--primary) 100%);
-            display: flex; align-items: center; justify-content: center;
-            color: white; font-size: 40px; font-weight: bold;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-            margin: 0 auto 20px;
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: var(--card-bg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--primary);
+            font-size: 32px;
+            font-weight: bold;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            margin: 0 auto 15px;
+            border: 4px solid var(--card-bg);
+            position: relative;
+            z-index: 2;
         }
 
-        .profile-card h2 { color: var(--text-dark); margin-bottom: 5px; }
-        .profile-card p { color: var(--text-light); margin-bottom: 15px; font-size: 14px; }
+        .profile-header h2 {
+            color: white;
+            margin-bottom: 5px;
+            font-size: 24px;
+            /* Increased from 20px */
+        }
+
+        .profile-header p {
+            color: rgba(255, 255, 255, 0.8);
+            margin-bottom: 15px;
+            font-size: 16px;
+            /* Increased from 14px */
+        }
+
+        .profile-body {
+            padding: 50px 20px 30px;
+            /* Increased top padding to make space for the badge */
+            margin-top: -40px;
+            position: relative;
+            z-index: 1;
+            background: var(--card-bg);
+            border-radius: var(--border-radius) var(--border-radius) 0 0;
+        }
+
 
         .status-badge {
-            display: inline-block; padding: 4px 12px;
-            background-color: var(--success); color: white;
-            border-radius: 20px; font-size: 12px; font-weight: 500;
+            /* Position the badge absolutely */
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            /* Center it on the top edge */
+
+            /* Revert to pill shape and add a border */
+            display: inline-block;
+            width: auto;
+            padding: 8px 20px;
+            border-radius: 30px;
+            /* Make it rounded */
+            border: 4px solid var(--card-bg);
+            /* Add a border to make it stand out */
+
+            /* Font styling */
+            font-size: 13px;
+            font-weight: 700;
+            text-transform: uppercase;
+
+            /* Remove old properties */
+            margin: 0;
+            background-color: var(--success);
+            color: white;
+            text-align: center;
         }
 
-        /* NEW: Container for the form cards on the right */
-        .forms-container { display: flex; flex-direction: column; gap: 30px; }
-        
-        /* NEW: Styling for individual form cards */
+        .profile-stats {
+            display: flex;
+            justify-content: space-around;
+            margin: 20px 0;
+            padding: 15px 0;
+            border-top: 1px solid var(--input-border);
+            border-bottom: 1px solid var(--input-border);
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 20px;
+            font-weight: bold;
+            color: var(--primary);
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: var(--text-light);
+            margin-top: 5px;
+        }
+
+        .profile-details {
+            margin-top: 20px;
+        }
+
+        .detail-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            /* Increased margin slightly */
+            font-size: 16px;
+            /* Increased from 14px */
+            font-weight: 600;
+            /* Made text bolder */
+        }
+
+        .detail-item i {
+            width: 20px;
+            font-size: 18px;
+            /* Increased icon size to match */
+            color: var(--primary);
+            margin-right: 12px;
+            /* Increased spacing */
+        }
+
+        .theme-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 25px;
+            padding: 12px 15px;
+            background: var(--body-bg);
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .theme-toggle:hover {
+            background: var(--input-border);
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 50px;
+            height: 24px;
+            background: var(--gray);
+            border-radius: 30px;
+            transition: var(--transition);
+        }
+
+        .toggle-switch::after {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            top: 2px;
+            left: 2px;
+            transition: var(--transition);
+        }
+
+        body.dark-theme .toggle-switch {
+            background: var(--primary);
+        }
+
+        body.dark-theme .toggle-switch::after {
+            left: 28px;
+        }
+
+        .forms-container {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+        }
+
         .form-card {
             background-color: var(--card-bg);
             border-radius: var(--border-radius);
@@ -120,66 +301,172 @@
         }
 
         .form-card::before {
-            content: ''; position: absolute; top: 0; left: 0;
-            width: 100%; height: 4px;
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
             background: linear-gradient(90deg, var(--primary-light) 0%, var(--primary) 100%);
         }
 
         .section-title {
-            display: flex; align-items: center; gap: 12px;
-            margin-bottom: 25px; color: var(--text-dark);
-            padding-bottom: 15px; border-bottom: 1px solid var(--input-border);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 25px;
+            color: var(--text-dark);
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--input-border);
         }
-        .section-title i { font-size: 22px; color: var(--primary); }
 
-        .form-group { margin-bottom: 20px; }
-        label { display: block; margin-bottom: 8px; font-weight: 500; color: var(--text-dark); }
-        .input-with-icon { position: relative; }
-        .input-with-icon i { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: var(--gray); }
-        .input-with-icon input { padding-left: 45px; }
-        
+        .section-title i {
+            font-size: 22px;
+            color: var(--primary);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: var(--text-dark);
+        }
+
+        .input-with-icon {
+            position: relative;
+        }
+
+        .input-with-icon>i:first-child {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--gray);
+        }
+
+        /* NEW: Styles for the password toggle icon */
+        .password-toggle-icon {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--gray);
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .password-toggle-icon:hover {
+            color: var(--text-dark);
+        }
+
+        .input-with-icon input {
+            padding-left: 45px;
+        }
+
         input {
-            width: 100%; padding: 12px 15px;
+            width: 100%;
+            padding: 12px 15px;
             border: 1px solid var(--input-border);
-            background-color: var(--body-bg); color: var(--text-dark);
-            border-radius: var(--border-radius); font-size: 16px;
+            background-color: var(--body-bg);
+            color: var(--text-dark);
+            border-radius: var(--border-radius);
+            font-size: 16px;
             transition: var(--transition);
         }
+
         input:focus {
-            outline: none; border-color: var(--primary);
+            outline: none;
+            border-color: var(--primary);
             box-shadow: 0 0 0 3px rgba(240, 101, 43, 0.2);
         }
-        input:disabled { background-color: #4a556828; color: var(--gray); cursor: not-allowed; }
+
+        input:disabled {
+            background-color: #4a556828;
+            color: var(--gray);
+            cursor: not-allowed;
+        }
 
         .btn {
-            padding: 12px 25px; border: none; border-radius: var(--border-radius);
-            font-size: 16px; font-weight: 500; cursor: pointer;
-            transition: var(--transition); display: inline-flex;
-            align-items: center; justify-content: center; gap: 8px;
+            padding: 12px 25px;
+            border: none;
+            border-radius: var(--border-radius);
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
         }
+
         .btn-primary {
             background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
-            color: white; box-shadow: 0 2px 5px rgba(240, 101, 43, 0.3);
+            color: white;
+            box-shadow: 0 2px 5px rgba(240, 101, 43, 0.3);
         }
-        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(240, 101, 43, 0.4); }
 
-        .actions { display: flex; justify-content: flex-end; margin-top: 10px; }
-        
-        .notification {
-            padding: 15px 20px; border-radius: var(--border-radius);
-            margin-bottom: 25px; display: none; align-items: center;
-            gap: 12px; animation: slideInNotify 0.5s ease;
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(240, 101, 43, 0.4);
         }
-        @keyframes slideInNotify { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-        .notification.success { background-color: rgba(46, 204, 113, 0.1); border: 1px solid var(--success); color: var(--success); }
-        .notification.error { background-color: rgba(231, 76, 60, 0.1); border: 1px solid var(--danger); color: var(--danger); }
-        .notification i { font-size: 20px; }
+
+        .actions {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 10px;
+        }
+
+        .notification {
+            padding: 15px 20px;
+            border-radius: var(--border-radius);
+            margin-bottom: 25px;
+            display: none;
+            align-items: center;
+            gap: 12px;
+            animation: slideInNotify 0.5s ease;
+        }
+
+        @keyframes slideInNotify {
+            from {
+                transform: translateY(-20px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .notification.success {
+            background-color: rgba(46, 204, 113, 0.1);
+            border: 1px solid var(--success);
+            color: var(--success);
+        }
+
+        .notification.error {
+            background-color: rgba(231, 76, 60, 0.1);
+            border: 1px solid var(--danger);
+            color: var(--danger);
+        }
+
+        .notification i {
+            font-size: 20px;
+        }
 
         @media (max-width: 900px) {
-            .settings-grid { grid-template-columns: 1fr; }
+            .settings-grid {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
+
 <body>
     <header>
         <div class="logo">
@@ -194,13 +481,41 @@
             <i class="fas fa-check-circle"></i>
             <div id="notification-message"></div>
         </div>
-        
+
         <div class="settings-grid">
             <aside class="profile-card">
-                <div class="profile-avatar" id="profile-avatar">--</div>
-                <h2 id="profile-name">Loading...</h2>
-                <p id="profile-role-display">Loading...</p>
-                <span class="status-badge" id="profile-status">...</span>
+                <div class="profile-header">
+                    <div class="profile-avatar" id="profile-avatar">--</div>
+                    <h2 id="profile-name">Loading...</h2>
+                    <p id="profile-role-display">Loading...</p>
+                </div>
+                <div class="profile-body">
+                    <span class="status-badge" id="profile-status">...</span>
+                    <div class="profile-stats">
+                        <div class="stat-item">
+                            <div class="stat-value" id="years-value">--</div>
+                            <div class="stat-label">Years with KSRTC</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="salary-value">--</div>
+                            <div class="stat-label">Salary (Monthly)</div>
+                        </div>
+                    </div>
+                    <div class="profile-details">
+                        <div class="detail-item">
+                            <i class="fas fa-id-card"></i>
+                            <span>Staff ID: <span id="staff-id-display">--</span></span>
+                        </div>
+                        <div class="detail-item">
+                            <i class="fas fa-calendar-alt"></i>
+                            <span>Joined: <span id="join-date">--</span></span>
+                        </div>
+                    </div>
+                    <div class="theme-toggle" id="theme-toggle">
+                        <span>Dark Mode</span>
+                        <div class="toggle-switch"></div>
+                    </div>
+                </div>
             </aside>
 
             <main class="forms-container">
@@ -231,7 +546,8 @@
                             </div>
                         </div>
                         <div class="actions">
-                            <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Save Information</button>
+                            <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Save
+                                Information</button>
                         </div>
                     </form>
                 </div>
@@ -246,6 +562,7 @@
                             <div class="input-with-icon">
                                 <i class="fas fa-lock"></i>
                                 <input type="password" id="current-password" required>
+                                <i class="fas fa-eye password-toggle-icon"></i>
                             </div>
                         </div>
                         <div class="form-group">
@@ -253,17 +570,20 @@
                             <div class="input-with-icon">
                                 <i class="fas fa-key"></i>
                                 <input type="password" id="new-password" required>
+                                <i class="fas fa-eye password-toggle-icon"></i>
                             </div>
                         </div>
-                         <div class="form-group">
+                        <div class="form-group">
                             <label for="confirm-password">Confirm New Password</label>
                             <div class="input-with-icon">
                                 <i class="fas fa-key"></i>
                                 <input type="password" id="confirm-password" required>
+                                <i class="fas fa-eye password-toggle-icon"></i>
                             </div>
                         </div>
                         <div class="actions">
-                            <button type="submit" class="btn btn-primary"><i class="fas fa-sync-alt"></i> Update Password</button>
+                            <button type="submit" class="btn btn-primary"><i class="fas fa-sync-alt"></i> Update
+                                Password</button>
                         </div>
                     </form>
                 </div>
@@ -277,61 +597,106 @@
             const staffId = localStorage.getItem('staffId');
 
             if (!staffId) {
-                // Redirect if not logged in
                 window.location.href = 'staff.html';
                 return;
             }
 
+            // --- All DOM element selections ---
+            const themeToggle = document.getElementById('theme-toggle');
+            const infoForm = document.getElementById('info-form');
+            const passwordForm = document.getElementById('password-form');
+            const profileName = document.getElementById('profile-name');
+            const profileRoleDisplay = document.getElementById('profile-role-display');
+            // THIS IS THE CORRECTED LINE:
+            const profileStatus = document.getElementById('profile-status');
+            const profileAvatar = document.getElementById('profile-avatar');
+            const staffIdDisplay = document.getElementById('staff-id-display');
+            const nameInput = document.getElementById('name');
+            const emailInput = document.getElementById('email');
+            const phoneInput = document.getElementById('phone');
+
+            // --- Theme setup ---
             const savedTheme = localStorage.getItem('theme');
             if (savedTheme === 'dark') {
                 document.body.classList.add('dark-theme');
             }
+            themeToggle.addEventListener('click', () => {
+                document.body.classList.toggle('dark-theme');
+                localStorage.setItem('theme', document.body.classList.contains('dark-theme') ? 'dark' : 'light');
+            });
 
-            const infoForm = document.getElementById('info-form');
-            const passwordForm = document.getElementById('password-form');
-            
-            const nameInput = document.getElementById('name');
-            const emailInput = document.getElementById('email');
-            const phoneInput = document.getElementById('phone');
-            
-            const profileAvatar = document.getElementById('profile-avatar');
-            const profileName = document.getElementById('profile-name');
-            const profileRoleDisplay = document.getElementById('profile-role-display');
-            const profileStatus = document.getElementById('profile-status');
+            // --- Notification function ---
+            function showNotification(message, type = 'success') {
+                const notification = document.getElementById('notification');
+                const messageDiv = document.getElementById('notification-message');
+                const icon = notification.querySelector('i');
+                icon.className = type === 'success' ? 'fas fa-check-circle' : 'fas fa-exclamation-circle';
+                messageDiv.textContent = message;
+                notification.className = 'notification ' + type;
+                notification.style.display = 'flex';
+                setTimeout(() => {
+                    notification.style.display = 'none';
+                }, 4000);
+            }
 
-
+            // --- Main data fetching function ---
             async function fetchAndPopulateStaffDetails() {
                 try {
                     const response = await fetch(`${API_BASE_URL}/staff/details/${staffId}`);
                     if (!response.ok) throw new Error('Failed to fetch staff details.');
-                    
                     const staff = await response.json();
-                    const roleFormatted = staff.role.charAt(0).toUpperCase() + staff.role.slice(1);
 
-                    // Populate profile card
+                    // Populate non-date related info
                     profileName.textContent = staff.name;
-                    profileRoleDisplay.textContent = roleFormatted;
-                    profileStatus.textContent = staff.status.charAt(0).toUpperCase() + staff.status.slice(1);
+                    profileRoleDisplay.textContent = (staff.role || '').charAt(0).toUpperCase() + (staff.role || '').slice(1);
+                    profileStatus.textContent = (staff.status || '').charAt(0).toUpperCase() + (staff.status || '').slice(1);
                     profileAvatar.textContent = staff.name.split(' ').map(n => n[0]).join('').toUpperCase();
-
-                    // Populate form fields
+                    staffIdDisplay.textContent = staffId;
                     nameInput.value = staff.name;
                     emailInput.value = staff.email;
                     phoneInput.value = staff.phone;
 
+                    // Safely handle the salary
+                    if (staff.salary) {
+                        const formattedSalary = `₹${parseFloat(staff.salary).toLocaleString('en-IN')}`;
+                        document.getElementById('salary-value').textContent = formattedSalary;
+                    }
+
+                    // Safely handle the date
+                    if (staff.date_joined) {
+                        const joinDate = new Date(staff.date_joined);
+                        if (!isNaN(joinDate.getTime())) {
+                            const today = new Date();
+                            let years = today.getFullYear() - joinDate.getFullYear();
+                            const m = today.getMonth() - joinDate.getMonth();
+                            if (m < 0 || (m === 0 && today.getDate() < joinDate.getDate())) {
+                                years--;
+                            }
+                            document.getElementById('years-value').textContent = years < 1 ? '<1' : years;
+                            document.getElementById('join-date').textContent = joinDate.toLocaleDateString('en-GB', {
+                                month: 'long',
+                                year: 'numeric'
+                            });
+                        }
+                    }
                 } catch (error) {
-                    showNotification('Could not load user data.', 'error');
+                    showNotification(error.message || 'Could not load user data.', 'error');
                 }
             }
 
+            // --- Form submission handlers ---
             infoForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
-                const updatedData = { email: emailInput.value, phone: phoneInput.value };
-
+                const updatedData = {
+                    email: emailInput.value,
+                    phone: phoneInput.value
+                };
                 try {
                     const response = await fetch(`${API_BASE_URL}/staff/${staffId}`, {
                         method: 'PUT',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
                         body: JSON.stringify(updatedData),
                     });
                     const result = await response.json();
@@ -347,18 +712,20 @@
                 const currentPassword = document.getElementById('current-password').value;
                 const newPassword = document.getElementById('new-password').value;
                 const confirmPassword = document.getElementById('confirm-password').value;
-
                 if (newPassword !== confirmPassword) {
                     showNotification('New passwords do not match.', 'error');
                     return;
                 }
-
-                // NOTE: This requires a new endpoint on your server: PUT /staff/:id/password
                 try {
                     const response = await fetch(`${API_BASE_URL}/staff/${staffId}/password`, {
                         method: 'PUT',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ current_password: currentPassword, new_password: newPassword }),
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            current_password: currentPassword,
+                            new_password: newPassword
+                        }),
                     });
                     const result = await response.json();
                     if (!response.ok) throw new Error(result.error);
@@ -369,21 +736,21 @@
                 }
             });
 
-            function showNotification(message, type = 'success') {
-                const notification = document.getElementById('notification');
-                const messageDiv = document.getElementById('notification-message');
-                const icon = notification.querySelector('i');
-                
-                icon.className = type === 'success' ? 'fas fa-check-circle' : 'fas fa-exclamation-circle';
-                messageDiv.textContent = message;
-                notification.className = 'notification ' + type;
-                notification.style.display = 'flex';
+            // --- Password toggle logic ---
+            document.querySelectorAll('.password-toggle-icon').forEach(icon => {
+                icon.addEventListener('click', () => {
+                    const input = icon.previousElementSibling;
+                    const isPassword = input.type === 'password';
+                    input.type = isPassword ? 'text' : 'password';
+                    icon.classList.toggle('fa-eye');
+                    icon.classList.toggle('fa-eye-slash');
+                });
+            });
 
-                setTimeout(() => { notification.style.display = 'none'; }, 4000);
-            }
-
+            // --- Initial data load ---
             fetchAndPopulateStaffDetails();
         });
     </script>
 </body>
+
 </html>
