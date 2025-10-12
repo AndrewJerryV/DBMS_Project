@@ -1,6 +1,8 @@
 const express = require('express');
 const mysql = require('mysql2');
 const cors = require('cors');
+const bcrypt = require('bcrypt'); // Add this line
+const saltRounds = 10; // Add this line for bcrypt
 
 const app = express();
 app.use(cors());
@@ -515,12 +517,16 @@ app.post('/staff/login', (req, res) => {
   const { email, password } = req.body;
   db.query('SELECT * FROM staff WHERE email = ?', [email], (err, results) => {
     if (err) return res.status(500).json({ error: 'Database error' });
-    if (results.length === 0) return res.status(401).json({ error: 'Invalid email or password' });
+    if (results.length === 0) return res.status(401).json({ error: 'Invalid email' });
     const staff = results[0];
-    if (password !== staff.password) {
-      return res.status(401).json({ error: 'Invalid email or password' });
-    }
-    res.json({ message: 'Login successful', staffId: staff.id, name: staff.name, role: staff.role });
+    // Compare submitted password with the stored hash
+    bcrypt.compare(password, staff.password, (bcryptErr, isMatch) => {
+      if (bcryptErr) return res.status(500).json({ error: 'Error during authentication' });
+      if (!isMatch) {
+        return res.status(401).json({ error: 'Invalid password' });
+      }
+      res.json({ message: 'Login successful', staffId: staff.id, name: staff.name, role: staff.role });
+    });
   });
 });
 
@@ -629,16 +635,22 @@ app.put('/staff/:id/password', (req, res) => {
     db.query('SELECT password FROM staff WHERE id = ?', [id], (err, results) => {
         if (err) return res.status(500).json({ error: 'Database error.' });
         if (results.length === 0) return res.status(404).json({ error: 'Staff not found.' });
-
+        
         const staff = results[0];
+        
+        bcrypt.compare(current_password, staff.password, (compareErr, isMatch) => {
+            if (compareErr) return res.status(500).json({ error: 'Authentication error.' });
+            if (!isMatch) return res.status(403).json({ error: 'Incorrect current password.' });
 
-        if (staff.password !== current_password) {
-            return res.status(403).json({ error: 'Incorrect current password.' });
-        }
+            // Hash the new password before updating
+            bcrypt.hash(new_password, saltRounds, (hashErr, hash) => {
+                if (hashErr) return res.status(500).json({ error: 'Failed to secure new password.' });
 
-        db.query('UPDATE staff SET password = ? WHERE id = ?', [new_password, id], (updateErr, updateResult) => {
-            if (updateErr) return res.status(500).json({ error: 'Failed to update password.' });
-            res.json({ message: 'Password updated successfully!' });
+                db.query('UPDATE staff SET password = ? WHERE id = ?', [hash, id], (updateErr) => {
+                    if (updateErr) return res.status(500).json({ error: 'Failed to update password.' });
+                    res.json({ message: 'Password updated successfully!' });
+                });
+            });
         });
     });
 });
