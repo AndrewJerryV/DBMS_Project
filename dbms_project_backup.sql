@@ -273,7 +273,7 @@ CREATE TABLE `staff` (
 
 LOCK TABLES `staff` WRITE;
 /*!40000 ALTER TABLE `staff` DISABLE KEYS */;
-INSERT INTO `staff` VALUES (1,'Anil Kumar','admin','anil@ksrtc.com','9447010003','adminpass',50000.00,'2020-01-10','active'),(2,'Rekha Nair','operator','rekha@ksrtc.com','9447010002','hashed_pw2',30000.00,'2021-03-12','active'),(3,'Sajith R','conductor','sajith@ksrtc.com','9447010003','hashed_pw3',28000.00,'2021-05-15','active'),(4,'Vineetha P','operator','vineetha@ksrtc.com','9447010004','hashed_pw4',32000.00,'2022-02-20','active'),(5,'Manoj S','conductor','manoj@ksrtc.com','9447010005','hashed_pw5',29000.00,'2022-07-18','active');
+INSERT INTO `staff` VALUES (1,'Anil Kumar','admin','anil@ksrtc.com','9447010003','$2a$10$JU.CceHDBt/N3iXxZ802LekFJ/WmbPeU7hJtpzA9u9Wj98.7ZJ2Mq',50000.00,'2020-01-10','active'),(2,'Rekha Nair','operator','rekha@ksrtc.com','9447010002','$2b$10$tnBDZfodZhjv1R5VYamN3.3N4B2SAWb5m5vS.Rfz/J5/zPoa9wu7O',30000.00,'2021-03-12','active'),(3,'Sajith R','conductor','sajith@ksrtc.com','9447010003','$2a$10$qf5JhU28TEfFxcpOGa5aGu/kegsJR.DgTjVg3IH8IFP4gGW0w9pYO',28000.00,'2021-05-15','active'),(4,'Vineetha P','operator','vineetha@ksrtc.com','9447010004','$2a$10$vnJd.kjJnm8ILeu9htolXuANYdV6Re4O5U8ChTEqK/JU47BgfVFOC',32000.00,'2022-02-20','active'),(5,'Manoj S','conductor','manoj@ksrtc.com','9447010005','$2a$10$qf5JhU28TEfFxcpOGa5aGu/kegsJR.DgTjVg3IH8IFP4gGW0w9pYO',29000.00,'2022-07-18','active');
 /*!40000 ALTER TABLE `staff` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
@@ -286,4 +286,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2025-10-12 18:30:10
+-- Dump completed on 2025-10-12 19:25:08
