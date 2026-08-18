@@ -513,6 +513,41 @@ app.get('/drivers', (req, res) => {
 
 // --- Staff & Auth Endpoints ---
 
+const STAFF_ROLES = ['admin', 'operator', 'conductor'];
+
+app.get('/staff/quick-login/users', (req, res) => {
+  const sql = `
+    SELECT s.id, s.name, s.role
+    FROM staff s
+    JOIN (
+      SELECT role, MIN(id) AS min_id
+      FROM staff
+      WHERE status = 'active' AND role IN (?)
+      GROUP BY role
+    ) first_user ON first_user.role = s.role AND first_user.min_id = s.id
+    WHERE s.status = 'active'
+    ORDER BY FIELD(s.role, 'admin', 'operator', 'conductor');
+  `;
+  db.query(sql, [STAFF_ROLES], (err, results) => {
+    if (err) return res.status(500).json({ error: 'Database error fetching quick login users.' });
+    res.json(results);
+  });
+});
+
+app.post('/staff/quick-login', (req, res) => {
+  const { role } = req.body;
+  if (!STAFF_ROLES.includes(role)) {
+    return res.status(400).json({ error: 'Invalid role provided.' });
+  }
+  const sql = 'SELECT id, name, role FROM staff WHERE role = ? AND status = "active" ORDER BY id LIMIT 1';
+  db.query(sql, [role], (err, results) => {
+    if (err) return res.status(500).json({ error: 'Database error' });
+    if (results.length === 0) return res.status(404).json({ error: `No active ${role} staff found.` });
+    const staff = results[0];
+    res.json({ message: 'Login successful', staffId: staff.id, name: staff.name, role: staff.role });
+  });
+});
+
 app.post('/staff/login', (req, res) => {
   const { email, password } = req.body;
   db.query('SELECT * FROM staff WHERE email = ?', [email], (err, results) => {
@@ -587,22 +622,19 @@ app.get('/routes/details/:id', (req, res) => {
 
 app.get('/dashboard/bookings-by-day', (req, res) => {
   const sql = `
-    SELECT DATE(booking_time) as date, COUNT(*) as count 
-    FROM bookings WHERE booking_time >= CURDATE() - INTERVAL 6 DAY 
-    GROUP BY DATE(booking_time) ORDER BY date;
+    SELECT DATE_FORMAT(booking_time, '%Y-%m-%d') as date, COUNT(*) as count
+    FROM bookings
+    GROUP BY DATE_FORMAT(booking_time, '%Y-%m-%d')
+    ORDER BY date DESC
+    LIMIT 7;
   `;
   db.query(sql, (err, results) => {
     if (err) return res.status(500).json({ error: 'Database error fetching chart data' });
-    const formatDate = (date) => date.toISOString().split('T')[0];
-    const dataMap = new Map(results.map(row => [formatDate(row.date), row.count]));
     const labels = [];
     const data = [];
-    for (let i = 6; i >= 0; i--) {
-      const date = new Date();
-      date.setDate(date.getDate() - i);
-      const formattedDate = formatDate(date);
-      labels.push(formattedDate);
-      data.push(dataMap.get(formattedDate) || 0);
+    for (let i = results.length - 1; i >= 0; i--) {
+      labels.push(results[i].date);
+      data.push(results[i].count);
     }
     res.json({ labels, data });
   });
