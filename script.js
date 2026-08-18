@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', function () {
-  const API_BASE_URL = 'http://localhost:3000';
+  const API_BASE_URL = (['localhost', '127.0.0.1', ''].includes(window.location.hostname)) ? 'http://localhost:3000' : '/api';
 
   const staffId = localStorage.getItem('staffId');
   if (!staffId) {
@@ -8,6 +8,21 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   fetchDashboardData();
+
+  // Fetch JSON with retries so transient API hiccups (e.g. cold starts) never
+  // leave charts/tables blank.
+  async function fetchJSON(url, attempts = 3) {
+    for (let i = 1; i <= attempts; i++) {
+      try {
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return await res.json();
+      } catch (e) {
+        if (i === attempts) throw e;
+        await new Promise(r => setTimeout(r, 700 * i));
+      }
+    }
+  }
 
   const views = {
     dashboard: document.getElementById('dashboard-view'),
@@ -266,7 +281,7 @@ document.addEventListener('DOMContentLoaded', function () {
   let bookingsChartInstance = null, utilizationChartInstance = null;
 
   function renderBookingsChart() {
-    fetch(`${API_BASE_URL}/dashboard/bookings-by-day`).then(res => res.json()).then(chartData => {
+    fetchJSON(`${API_BASE_URL}/dashboard/bookings-by-day`).then(chartData => {
       const ctx = document.getElementById('bookingsChart').getContext('2d');
 
       // Create a gradient for the bar chart
@@ -312,7 +327,7 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   function renderUtilizationChart() {
-    fetch(`${API_BASE_URL}/dashboard/bus-utilization`).then(res => res.json()).then(utilizationData => {
+    fetchJSON(`${API_BASE_URL}/dashboard/bus-utilization`).then(utilizationData => {
       const ctx = document.getElementById('utilizationChart').getContext('2d');
       if (utilizationChartInstance) utilizationChartInstance.destroy();
       utilizationChartInstance = new Chart(ctx, {

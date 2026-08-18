@@ -18,9 +18,9 @@ A full-stack bus management dashboard for KSRTC that lets staff manage buses, ro
 ## Tech Stack
 
 - **Backend:** Node.js, Express
-- **Database:** MySQL (mysql2 driver)
+- **Database:** MySQL (mysql2 driver) — connection configured via environment variables
 - **Frontend:** HTML, CSS, vanilla JavaScript
-- **Libraries:** bcrypt (password hashing), Chart.js (charts), Font Awesome (icons)
+- **Libraries:** bcryptjs (password hashing), serverless-http (Netlify Functions), Chart.js (charts), Font Awesome (icons)
 
 ## Database Schema
 
@@ -51,7 +51,7 @@ mysql -u root -p DBMS_Project < dbms_project_backup.sql
 npm install
 ```
 
-Installs `express`, `mysql2`, `cors`, and `bcrypt`.
+Installs `express`, `mysql2`, `cors`, `bcryptjs`, and `serverless-http`.
 
 ### 3. Run the server
 

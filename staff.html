@@ -462,6 +462,7 @@
 
   <script>
     document.addEventListener("DOMContentLoaded", () => {
+      const API_BASE_URL = (['localhost', '127.0.0.1', ''].includes(window.location.hostname)) ? 'http://localhost:3000' : '/api';
       const form = document.getElementById("login-form");
       const errorMessageDiv = document.getElementById("error-message");
       const togglePassword = document.getElementById("togglePassword");
@@ -505,7 +506,7 @@
           submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Logging in...';
           submitBtn.disabled = true;
 
-          const response = await fetch("http://localhost:3000/staff/login", {
+          const response = await fetch(`${API_BASE_URL}/staff/login`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json"
@@ -558,7 +559,7 @@
       // --- Quick login (one-click login by role) ---
       const quickLoginButtons = document.getElementById('quick-login-buttons');
 
-      fetch("http://localhost:3000/staff/quick-login/users")
+      fetch(`${API_BASE_URL}/staff/quick-login/users`)
         .then(res => res.json())
         .then(users => {
           if (!Array.isArray(users) || users.length === 0) {
@@ -595,7 +596,7 @@
         btn.querySelector('strong').textContent = 'Logging in...';
 
         try {
-          const response = await fetch("http://localhost:3000/staff/quick-login", {
+          const response = await fetch(`${API_BASE_URL}/staff/quick-login`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ role })
